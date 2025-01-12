@@ -1,0 +1,46 @@
+{
+  "name": "@cloudbeaver/core-sdk",
+  "type": "module",
+  "sideEffects": [
+    "src/**/*.css",
+    "src/**/*.scss",
+    "public/**/*"
+  ],
+  "version": "0.1.0",
+  "description": "",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rimraf node_modules",
+    "build": "yarn run gql:gen && tsc -b",
+    "gql:gen": "yarn run clean && graphql-codegen",
+    "gql:gen:dev": "yarn run clean && graphql-codegen --watch",
+    "lint": "eslint ./src/ --ext .ts,.tsx",
+    "test": "core-cli-test",
+    "validate-dependencies": "core-cli-validate-dependencies",
+    "update-ts-references": "yarn run clean && typescript-resolve-references"
+  },
+  "dependencies": {
+    "@cloudbeaver/core-di": "^0",
+    "@cloudbeaver/core-executor": "^0",
+    "@cloudbeaver/core-utils": "^0",
+    "axios": "^1",
+    "graphql": "^16",
+    "graphql-request": "^6",
+    "mobx": "^6"
+  },
+  "devDependencies": {
+    "@graphql-codegen/add": "^5",
+    "@graphql-codegen/cli": "^5",
+    "@graphql-codegen/near-operation-file-preset": "^3",
+    "@graphql-codegen/typescript": "^4",
+    "@graphql-codegen/typescript-graphql-files-modules": "^3",
+    "@graphql-codegen/typescript-graphql-request": "^6",
+    "@graphql-codegen/typescript-operations": "^4",
+    "@parcel/watcher": "^2",
+    "graphql": "^16",
+    "graphql-tag": "^2",
+    "typescript": "^5"
+  },
+  "peerDependencies": {}
+}

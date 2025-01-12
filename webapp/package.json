@@ -1,0 +1,59 @@
+{
+  "name": "cloudbeaver-ce",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/core-cli/**"
+    ]
+  },
+  "resolutions": {
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "react": "^18",
+    "react-dom": "^18",
+    "mobx": "^6",
+    "mobx-react-lite": "^4"
+  },
+  "scripts": {
+    "test": "core-cli-test",
+    "clean": "rimraf --glob packages/*/dist",
+    "lint": "eslint --ext .ts,.tsx",
+    "validate-dependencies": "core-cli-validate-dependencies './packages/*/'",
+    "update-ts-references": "yarn run clean && typescript-resolve-references './packages/*/'",
+    "add-plugin": "core-cli-add-plugin",
+    "prebuild": "lerna run gql:gen --stream --parallel",
+    "prepare": "cd .. && husky ./webapp/.husky",
+    "postinstall": "husky"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10",
+    "@testing-library/jest-dom": "^6",
+    "@testing-library/react": "^16",
+    "@testing-library/user-event": "^14",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "concurrently": "^9",
+    "husky": "^9",
+    "lerna": "^5",
+    "mobx": "^6",
+    "mobx-react-lite": "^4",
+    "msw": "^2",
+    "path-browserify": "^1",
+    "prettier": "^3",
+    "react": "^18",
+    "react-dom": "^18",
+    "reakit": "^1",
+    "reflect-metadata": "^0",
+    "rimraf": "^6",
+    "typescript": "^5",
+    "typescript-plugin-css-modules": "^5"
+  },
+  "dependencies": {},
+  "prettier": "@cloudbeaver/prettier-config",
+  "packageManager": "yarn@1.22.21"
+}

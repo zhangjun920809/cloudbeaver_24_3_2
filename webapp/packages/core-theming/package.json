@@ -1,0 +1,54 @@
+{
+  "name": "@cloudbeaver/core-theming",
+  "type": "module",
+  "sideEffects": [
+    "src/**/*.css",
+    "src/**/*.scss",
+    "public/**/*"
+  ],
+  "version": "0.1.0",
+  "description": "",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf --glob dist",
+    "lint": "eslint ./src/ --ext .ts,.tsx",
+    "test": "core-cli-test",
+    "validate-dependencies": "core-cli-validate-dependencies",
+    "update-ts-references": "yarn run clean && typescript-resolve-references"
+  },
+  "dependencies": {
+    "@cloudbeaver/core-di": "^0",
+    "@cloudbeaver/core-events": "^0",
+    "@cloudbeaver/core-executor": "^0",
+    "@cloudbeaver/core-localization": "^0",
+    "@cloudbeaver/core-settings": "^0",
+    "@cloudbeaver/core-utils": "^0",
+    "mobx": "^6"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "@cloudbeaver/core-client-activity": "^0",
+    "@cloudbeaver/core-events": "^0",
+    "@cloudbeaver/core-localization": "^0",
+    "@cloudbeaver/core-root": "^0",
+    "@cloudbeaver/core-sdk": "^0",
+    "@cloudbeaver/core-settings": "^0",
+    "@cloudbeaver/tests-runner": "^0",
+    "@fontsource/roboto": "^5",
+    "@jest/globals": "^29",
+    "@material/button": "^4",
+    "@material/checkbox": "^4",
+    "@material/elevation": "^4",
+    "@material/layout-grid": "^4",
+    "@material/radio": "^4",
+    "@material/ripple": "^4",
+    "@material/switch": "^4",
+    "@material/theme": "^4",
+    "@material/typography": "^4",
+    "@types/jest": "^29",
+    "typescript": "^5",
+    "typescript-plugin-css-modules": "^5"
+  }
+}
