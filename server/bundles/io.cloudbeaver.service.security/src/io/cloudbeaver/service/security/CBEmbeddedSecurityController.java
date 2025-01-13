@@ -82,6 +82,8 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
 
     protected final T application;
     protected final CBDatabase database;
+    //新增
+    protected final CBDatabase userdatabase ;
     protected final SMCredentialsProvider credentialsProvider;
 
     protected final SMControllerConfiguration smConfig;
@@ -96,6 +98,9 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         this.database = database;
         this.credentialsProvider = credentialsProvider;
         this.smConfig = smConfig;
+        //设置用户数据源
+        this.userdatabase = EmbeddedSecurityControllerFactory.getUserInstance();
+
     }
 
     private boolean isSubjectExists(String subjectId) throws DBCException {
@@ -169,8 +174,10 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
             }
             dbStat.execute();
         }
+        //设置 CB_SUBJECT_META
         saveSubjectMetas(dbCon, userId, metaParameters);
         String defaultTeamName = getDefaultUserTeam();
+        //设置 CB_SUBJECT_META
         if (!CommonUtils.isEmpty(defaultTeamName)) {
             setUserTeams(dbCon, userId, new String[]{defaultTeamName}, userId);
         }

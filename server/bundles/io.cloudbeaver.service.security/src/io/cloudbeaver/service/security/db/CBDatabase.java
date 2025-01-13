@@ -197,7 +197,7 @@ public class CBDatabase {
             throw new DBException("Error initializing connection pool");
         }
         dialect = driver.getScriptDialect().createInstance();
-
+//        System.out.println("==============");
         try (Connection connection = cbDataSource.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
             log.debug("\tConnected to " + metaData.getDatabaseProductName() + " " + metaData.getDatabaseProductVersion());
@@ -236,6 +236,83 @@ public class CBDatabase {
         } catch (Exception e) {
             throw new DBException("Error updating management database schema", e);
         }
+        log.debug("\tManagement database connection established");
+    }
+
+    //新增
+    public void initializeDB() throws DBException {
+        log.debug("Initiate coustom database");
+        if (CommonUtils.isEmpty(databaseConfiguration.getDriver())) {
+            throw new DBException("No database driver configured for CloudBeaver database");
+        }
+        var dataSourceProviderRegistry = DataSourceProviderRegistry.getInstance();
+        DBPDriver driver = dataSourceProviderRegistry.findDriver(databaseConfiguration.getDriver());
+        if (driver == null) {
+            throw new DBException("Driver '" + databaseConfiguration.getDriver() + "' not found");
+        }
+
+        LoggingProgressMonitor monitor = new LoggingProgressMonitor(log);
+
+        if (isDefaultH2Configuration(databaseConfiguration)) {
+            //force use default values even if they are explicitly specified
+            databaseConfiguration.setUser(null);
+            databaseConfiguration.setPassword(null);
+            databaseConfiguration.setSchema(null);
+        }
+
+        String dbUser = databaseConfiguration.getUser();
+        String dbPassword = databaseConfiguration.getPassword();
+        String schemaName = databaseConfiguration.getSchema();
+
+        if (CommonUtils.isEmpty(dbUser) && driver.isEmbedded()) {
+            File pwdFile = application.getDataDirectory(true).resolve(DEFAULT_DB_PWD_FILE).toFile();
+            if (!driver.isAnonymousAccess()) {
+                // No database credentials specified
+                dbUser = DEFAULT_DB_USER_NAME;
+
+                // Load or generate random password
+                if (pwdFile.exists()) {
+                    try (FileReader fr = new FileReader(pwdFile)) {
+                        dbPassword = IOUtils.readToString(fr);
+                    } catch (Exception e) {
+                        log.error(e);
+                    }
+                }
+                if (CommonUtils.isEmpty(dbPassword)) {
+                    dbPassword = SecurityUtils.generatePassword(8);
+                    try {
+                        IOUtils.writeFileFromString(pwdFile, dbPassword);
+                    } catch (IOException e) {
+                        log.error(e);
+                    }
+                }
+            }
+        }
+
+        Properties dbProperties = new Properties();
+        if (!CommonUtils.isEmpty(dbUser)) {
+            dbProperties.put(DBConstants.DATA_SOURCE_PROPERTY_USER, dbUser);
+            if (!CommonUtils.isEmpty(dbPassword)) {
+                dbProperties.put(DBConstants.DATA_SOURCE_PROPERTY_PASSWORD, dbPassword);
+            }
+        }
+
+
+        // reload the driver and url due to a possible configuration update
+        driver = dataSourceProviderRegistry.findDriver(databaseConfiguration.getDriver());
+        if (driver == null) {
+            throw new DBException("Driver '" + databaseConfiguration.getDriver() + "' not found");
+        }
+        Driver driverInstance = driver.getDriverInstance(monitor);
+        String dbURL = GeneralUtils.replaceVariables(databaseConfiguration.getUrl(), SystemVariablesResolver.INSTANCE);
+
+        try {
+            this.cbDataSource = initConnectionPool(driver, dbURL, dbProperties, driverInstance);
+        } catch (SQLException e) {
+            throw new DBException("Error initializing connection pool");
+        }
+//        dialect = driver.getScriptDialect().createInstance();
+
         log.debug("\tManagement database connection established");
     }
 

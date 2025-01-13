@@ -880,6 +880,9 @@ public class WebSession extends BaseWebSession
         if (contextChanged) {
             refreshUserData();
         }
+//        if (contextChanged) {
+//            refreshUserData();
+//        }
         return contextChanged;
     }
 

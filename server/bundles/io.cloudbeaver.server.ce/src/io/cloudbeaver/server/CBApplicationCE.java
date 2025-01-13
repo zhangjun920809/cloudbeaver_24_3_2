@@ -69,9 +69,11 @@ public class CBApplicationCE extends CBApplication<CBServerConfig> {
     }
 
     protected SMAdminController createGlobalSecurityController() throws DBException {
-        return new EmbeddedSecurityControllerFactory<>().createSecurityService(
+        return new EmbeddedSecurityControllerFactory<>().createSecurityServiceNew(
             this,
             getServerConfiguration().getDatabaseConfiguration(),
+            getServerConfiguration().getUserdatabaseConfiguration(),
+            getServerConfiguration().getDbdatabaseConfiguration(),
             new NoAuthCredentialsProvider(),
             getServerConfiguration().getSecurityManagerConfiguration()
         );

@@ -83,28 +83,29 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
         if (authParameters == null) {
             authParameters = Map.of();
         }
+        //CBEmbeddedSecurityController类型，登录入口
         SMController securityController = webSession.getSecurityController();
         String currentSmSessionId = (webSession.getUser() == null || CBApplication.getInstance().isConfigurationMode())
             ? null
             : webSession.getUserContext().getSmSessionId();
 
         try {
-            var smAuthInfo = securityController.authenticate(
+            var smAuthInfo = securityController.authenticate(//认证方法
                 webSession.getSessionId(),
                 currentSmSessionId,
                 webSession.getSessionParameters(),
                 WebSession.CB_SESSION_TYPE,
-                providerId,
-                providerConfigurationId,
+                providerId,//local
+                providerConfigurationId,//null
                 authParameters,
-                forceSessionsLogout
+                forceSessionsLogout//false
             );
 
             linkWithActiveUser = linkWithActiveUser && CBApplication.getInstance().getAppConfiguration().isLinkExternalCredentialsWithUser();
             if (smAuthInfo.getAuthStatus() == SMAuthStatus.IN_PROGRESS) {
                 //run async auth process
                 return new WebAuthStatus(smAuthInfo.getAuthAttemptId(), smAuthInfo.getRedirectUrl(), smAuthInfo.getAuthStatus());
-            } else {
+            } else {// 执行
                 //run it sync
                 var authProcessor = new WebSessionAuthProcessor(webSession, smAuthInfo, linkWithActiveUser);
                 return new WebAuthStatus(smAuthInfo.getAuthStatus(), authProcessor.authenticateSession());

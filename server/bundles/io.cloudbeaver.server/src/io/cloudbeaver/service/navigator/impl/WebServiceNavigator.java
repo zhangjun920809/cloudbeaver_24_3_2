@@ -29,7 +29,9 @@ import io.cloudbeaver.service.navigator.DBWServiceNavigator;
 import io.cloudbeaver.service.navigator.WebCatalog;
 import io.cloudbeaver.service.navigator.WebNavigatorNodeInfo;
 import io.cloudbeaver.service.navigator.WebStructContainers;
+import io.cloudbeaver.service.security.EmbeddedSecurityControllerFactory;
 import io.cloudbeaver.service.security.SMUtils;
+import io.cloudbeaver.service.security.db.CBDatabase;
 import io.cloudbeaver.utils.WebConnectionFolderUtils;
 import io.cloudbeaver.utils.WebEventUtils;
 import org.jkiss.code.NotNull;
@@ -58,6 +60,9 @@ import org.jkiss.dbeaver.model.websocket.event.resource.WSResourceProperty;
 import org.jkiss.dbeaver.runtime.DBWorkbench;
 import org.jkiss.utils.CommonUtils;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -69,6 +74,8 @@ public class WebServiceNavigator implements DBWServiceNavigator {
     private static final List<WebNavigatorNodeInfo> EMPTY_NODE_LIST = Collections.emptyList();
 
     public static final String ROOT_DATABASES = "databases";
+    public static final CBDatabase userdatabase = EmbeddedSecurityControllerFactory.getDbDbInstance();
+
 
     @Override
     public List<WebNavigatorNodeInfo> getNavigatorNodeChildren(
@@ -79,11 +86,26 @@ public class WebServiceNavigator implements DBWServiceNavigator {
         Boolean onlyFolders
     ) throws DBWebException {
         try {
+            //测试数据源
+            try{
+                CBDatabase userdatabase = EmbeddedSecurityControllerFactory.getDbDbInstance();
+                Connection connection = userdatabase.openConnection();
+                String sql = "select * from indaas_database";
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()){
+                    System.out.println(resultSet.getString("name"));
+                }
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
             DBRProgressMonitor monitor = session.getProgressMonitor();
 
             DBNNode[] nodeChildren;
             boolean isRootPath = CommonUtils.isEmpty(parentPath) || "/".equals(parentPath) || ROOT_DATABASES.equals(parentPath);
             DBNModel navigatorModel = session.getNavigatorModelOrThrow();
+            // 获取所有驱动
             Set<String> applicableDrivers = WebServiceUtils.getApplicableDriversIds();
             if (isRootPath) {
                 DBNRoot rootNode = navigatorModel.getRoot();

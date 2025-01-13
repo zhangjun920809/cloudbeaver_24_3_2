@@ -67,6 +67,7 @@ public class LocalAuthProvider implements SMAuthProvider<LocalAuthSession>, SMBr
         if (CommonUtils.isEmpty(clientPassword)) {
             throw new DBException("No user password provided");
         }
+        //此处编码传入密码参数，
         String clientPasswordHash = AuthPropertyEncryption.hash.encrypt(userName, clientPassword);
         // we also need to check a hash with lower case (CB-5833)
         String clientPasswordHashLowerCase = AuthPropertyEncryption.hash.encrypt(userName.toLowerCase(), clientPassword);

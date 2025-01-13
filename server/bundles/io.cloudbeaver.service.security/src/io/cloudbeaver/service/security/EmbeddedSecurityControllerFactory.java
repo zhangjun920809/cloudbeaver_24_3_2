@@ -31,9 +31,18 @@ import org.jkiss.dbeaver.model.auth.SMCredentialsProvider;
  */
 public class EmbeddedSecurityControllerFactory<T extends ServletAuthApplication> {
     private static volatile CBDatabase DB_INSTANCE;
-
+    private static volatile CBDatabase USER_INSTANCE;
+    private static volatile CBDatabase DB_DB_INSTANCE;
     public static CBDatabase getDbInstance() {
         return DB_INSTANCE;
+    }
+    //新增
+    public static CBDatabase getUserInstance() {
+        return USER_INSTANCE;
+    }
+    //新增
+    public static CBDatabase getDbDbInstance() {
+        return DB_DB_INSTANCE;
     }
 
     /**
@@ -67,7 +76,73 @@ public class EmbeddedSecurityControllerFactory<T extends ServletAuthApplication>
             application, DB_INSTANCE, credentialsProvider, smConfig
         );
     }
+    public CBEmbeddedSecurityController<T> createSecurityServiceNew(
+            T application,
+            WebDatabaseConfig databaseConfig,
+            WebDatabaseConfig userdatabaseConfig,
+            WebDatabaseConfig dbdatabaseConfig,
+            SMCredentialsProvider credentialsProvider,
+            SMControllerConfiguration smConfig
+    ) throws DBException {
 
+        if (DB_INSTANCE == null) {
+//            System.out.println("DB_INSTANCE====1");
+            synchronized (EmbeddedSecurityControllerFactory.class) {
+                if (DB_INSTANCE == null) {
+                    DB_INSTANCE = createAndInitDatabaseInstance(
+                            application,
+                            databaseConfig,
+                            smConfig
+                    );
+                }
+            }
+
+            if (application.isLicenseRequired()) {
+                // delete expired auth info job in enterprise products
+                new ClearAuthAttemptInfoJob(createEmbeddedSecurityController(
+                        application, DB_INSTANCE, new NoAuthCredentialsProvider(), smConfig
+                )).schedule();
+            }
+        }
+
+        // 用户数据源
+        if (USER_INSTANCE == null) {
+//            System.out.println("USER_INSTANCE====1");
+            synchronized (EmbeddedSecurityControllerFactory.class) {
+                if (USER_INSTANCE == null) {
+                    USER_INSTANCE = createAndInitDatabaseInstanceNew(
+                            application,
+                            userdatabaseConfig,
+                            smConfig
+                    );
+                }
+                try {
+                    System.out.println("USER_INSTANCE.openConnection().getMetaData().getDatabaseProductName()============="+USER_INSTANCE.openConnection().getMetaData().getDatabaseProductName());
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+            }
+        }
+
+        // 数据库数据源
+        if (DB_DB_INSTANCE == null) {
+            System.out.println("DB_DB_INSTANCE====1");
+            synchronized (EmbeddedSecurityControllerFactory.class) {
+                if (DB_DB_INSTANCE == null) {
+                    DB_DB_INSTANCE = createAndInitDatabaseInstanceNew(
+                            application,
+                            dbdatabaseConfig,
+                            smConfig
+                    );
+                }
+            }
+        }
+
+        return createEmbeddedSecurityController(
+                application, DB_INSTANCE, credentialsProvider, smConfig
+        );
+    }
     protected @NotNull CBDatabase createAndInitDatabaseInstance(
         @NotNull T application,
         @NotNull WebDatabaseConfig databaseConfig,
@@ -81,6 +156,28 @@ public class EmbeddedSecurityControllerFactory<T extends ServletAuthApplication>
         database.setAdminSecurityController(securityController);
         try {
             database.initialize();
+        } catch (DBException e) {
+            database.shutdown();
+            throw e;
+        }
+
+        return database;
+    }
+
+    protected @NotNull CBDatabase createAndInitDatabaseInstanceNew(
+            @NotNull T application,
+            @NotNull WebDatabaseConfig databaseConfig,
+            @NotNull SMControllerConfiguration smConfig
+    ) throws DBException {
+        System.out.println("createAndInitDatabaseInstanceNew===getUrl=" + databaseConfig.getUrl());
+        var database = new CBDatabase(application, databaseConfig);
+//        var securityController = createEmbeddedSecurityController(
+//                application, database, new NoAuthCredentialsProvider(), smConfig
+//        );
+        //FIXME circular dependency
+//        database.setAdminSecurityController(securityController);
+        try {
+            database.initializeDB();
         } catch (DBException e) {
             database.shutdown();
             throw e;

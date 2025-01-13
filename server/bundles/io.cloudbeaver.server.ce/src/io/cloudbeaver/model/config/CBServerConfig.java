@@ -51,7 +51,30 @@ public class CBServerConfig implements WebServerConfiguration {
     protected final SMControllerConfiguration securityManagerConfiguration = new SMControllerConfiguration();
     @SerializedName("database")
     private WebDatabaseConfig databaseConfiguration = new WebDatabaseConfig();
+
+
+    @SerializedName("dbdatabase")
+    private DatasourceDatabaseConfig dbdatabaseConfiguration = new DatasourceDatabaseConfig();
+
+    @SerializedName("userdatabase")
+    private UserDatabaseConfig userdatabaseConfiguration = new UserDatabaseConfig();
+
     private String staticContent = "";
+    public DatasourceDatabaseConfig getDbdatabaseConfiguration() {
+        return dbdatabaseConfiguration;
+    }
+
+    public void setDbdatabaseConfiguration(DatasourceDatabaseConfig dbdatabaseConfiguration) {
+        this.dbdatabaseConfiguration = dbdatabaseConfiguration;
+    }
+
+    public UserDatabaseConfig getUserdatabaseConfiguration() {
+        return userdatabaseConfiguration;
+    }
+
+    public void setUserdatabaseConfiguration(UserDatabaseConfig userdatabaseConfiguration) {
+        this.userdatabaseConfiguration = userdatabaseConfiguration;
+    }
 
     public String getServerURL() {
         return serverURL;

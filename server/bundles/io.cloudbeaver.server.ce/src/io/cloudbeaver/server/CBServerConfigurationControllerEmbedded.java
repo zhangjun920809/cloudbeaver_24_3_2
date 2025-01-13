@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
 import io.cloudbeaver.model.config.CBServerConfig;
+import io.cloudbeaver.model.config.DatasourceDatabaseConfig;
+import io.cloudbeaver.model.config.UserDatabaseConfig;
 import io.cloudbeaver.model.config.WebDatabaseConfig;
 import org.jkiss.code.NotNull;
 import org.jkiss.dbeaver.Log;
@@ -98,7 +100,15 @@ public class CBServerConfigurationControllerEmbedded<T extends CBServerConfig> e
         GsonBuilder gsonBuilder = super.getGsonBuilder();
         var databaseConfiguration = getServerConfiguration().getDatabaseConfiguration();
         InstanceCreator<WebDatabaseConfig> dbConfigCreator = type -> databaseConfiguration;
+
+        var userdatabaseConfiguration = getServerConfiguration().getUserdatabaseConfiguration();
+        InstanceCreator<UserDatabaseConfig> userdbConfigCreator = type -> userdatabaseConfiguration;
+
+        var dbdatabaseConfiguration = getServerConfiguration().getDbdatabaseConfiguration();
+        InstanceCreator<DatasourceDatabaseConfig> dbdbConfigCreator = type -> dbdatabaseConfiguration;
         return gsonBuilder
-            .registerTypeAdapter(WebDatabaseConfig.class, dbConfigCreator);
+            .registerTypeAdapter(WebDatabaseConfig.class, dbConfigCreator)
+                .registerTypeAdapter(UserDatabaseConfig.class, userdbConfigCreator)
+                .registerTypeAdapter(DatasourceDatabaseConfig.class, dbdbConfigCreator);
     }
 }
