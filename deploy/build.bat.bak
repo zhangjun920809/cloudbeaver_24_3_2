@@ -12,17 +12,8 @@ mkdir cloudbeaver\conf
 mkdir cloudbeaver\workspace
 mkdir cloudbeaver\web
 
-echo already download
+echo 依赖的源码已手动下载
 
-@REM cd ..\..
-
-@REM echo Pull dbeaver platform
-
-@REM IF NOT EXIST dbeaver git clone https://github.com/dbeaver/dbeaver.git
-@REM IF NOT EXIST dbeaver-common git clone https://github.com/dbeaver/dbeaver-common.git
-@REM IF NOT EXIST dbeaver-jdbc-libsql git clone https://github.com/dbeaver/dbeaver-jdbc-libsql.git
-
-@REM cd cloudbeaver\deploy
 
 echo Build cloudbeaver server
 
@@ -59,9 +50,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 cd ..\..\
-@REM  call yarn test
-
-@REM  if %ERRORLEVEL% neq 0 (
+@REM call yarn test
+@REM
+@REM if %ERRORLEVEL% neq 0 (
 @REM     echo 'Frontend tests failed'
 @REM     exit /b %ERRORLEVEL%
 @REM )
