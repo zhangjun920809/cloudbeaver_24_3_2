@@ -146,7 +146,7 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
 
         try {
 //            var smAuthInfo = securityController.authenticateBak(//认证方法 原始认证方法
-            var smAuthInfo = securityController.authenticateBak(//认证方法，新增认证方法
+            var smAuthInfo = securityController.authenticate(//认证方法，新增认证方法
                     webSession.getSessionId(),
                     currentSmSessionId,//null
                     webSession.getSessionParameters(),//登录地址和浏览器信息

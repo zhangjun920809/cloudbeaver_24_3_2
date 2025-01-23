@@ -1555,8 +1555,8 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         return getSubjectPermissions(anonymousUserTeam);
     }
 
-    @Override
-    public SMAuthInfo authenticate(
+//    @Override
+    public SMAuthInfo authenticate_new(
         @NotNull String appSessionId,
         @Nullable String previousSmSessionId,//null
         @NotNull Map<String, Object> sessionParameters,//地址和浏览器信息
@@ -1671,7 +1671,7 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         }
     }
     @Override
-    public SMAuthInfo authenticateBak(
+    public SMAuthInfo authenticate(
             @NotNull String appSessionId,
             @Nullable String previousSmSessionId,//null
             @NotNull Map<String, Object> sessionParameters,//地址和浏览器信息
