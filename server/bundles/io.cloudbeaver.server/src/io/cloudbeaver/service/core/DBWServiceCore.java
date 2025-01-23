@@ -133,6 +133,16 @@ public interface DBWServiceCore extends DBWService {
         @NotNull WebConnectionConfig connectionConfig
     ) throws DBWebException;
 
+    //创建数据源
+    @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})
+    WebConnectionInfo createDriDatasource(
+            @NotNull WebSession webSession,
+            @Nullable String projectId,
+            @NotNull String connectionId,
+            @NotNull String dbname,
+            @NotNull String datasourceName
+    ) throws DBWebException;
+
     @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})
     WebConnectionInfo updateConnection(
         @NotNull WebSession webSession,

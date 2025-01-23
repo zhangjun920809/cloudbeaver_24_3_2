@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# 获取当前目录
+CURRENT_DIR=$(pwd)
+
+# 设置环境变量 PROJECT_HOME
+export CARBON_HOME="$CURRENT_DIR"
+echo "project home " $CARBON_HOME
+
 launcherJar=( server/plugins/org.jkiss.dbeaver.launcher*.jar )
 
 echo "Starting Cloudbeaver Server"

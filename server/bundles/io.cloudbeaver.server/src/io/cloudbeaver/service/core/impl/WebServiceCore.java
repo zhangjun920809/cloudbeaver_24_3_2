@@ -17,6 +17,7 @@
 package io.cloudbeaver.service.core.impl;
 
 
+import com.google.gson.JsonObject;
 import io.cloudbeaver.*;
 import io.cloudbeaver.model.*;
 import io.cloudbeaver.model.app.ServletApplication;
@@ -27,6 +28,7 @@ import io.cloudbeaver.server.WebAppUtils;
 import io.cloudbeaver.server.WebApplication;
 import io.cloudbeaver.service.core.DBWServiceCore;
 import io.cloudbeaver.service.security.SMUtils;
+import io.cloudbeaver.service.security.indaas.DriDatasourceService;
 import io.cloudbeaver.utils.ServletAppUtils;
 import io.cloudbeaver.utils.WebConnectionFolderUtils;
 import io.cloudbeaver.utils.WebDataSourceUtils;
@@ -333,15 +335,15 @@ public class WebServiceCore implements DBWServiceCore {
     @Override
     public WebConnectionInfo initConnection(
         @NotNull WebSession webSession,
-        @Nullable String projectId,
-        @NotNull String connectionId,
+        @Nullable String projectId,//u_cbadmin
+        @NotNull String connectionId,//mysql8-xxx
         @NotNull Map<String, Object> authProperties,
         @Nullable List<WebNetworkHandlerConfigInput> networkCredentials,
         @Nullable Boolean saveCredentials,
         @Nullable Boolean sharedCredentials,
         @Nullable String selectedSecretId
     ) throws DBWebException {
-        WebConnectionInfo connectionInfo = WebDataSourceUtils.getWebConnectionInfo(webSession, projectId, connectionId);
+        WebConnectionInfo connectionInfo = WebDataSourceUtils.getWebConnectionInfo(webSession, projectId, connectionId);//返回信息包含了数据源的的信息
         connectionInfo.setSavedCredentials(authProperties, networkCredentials);
 
         var dataSourceContainer = (DataSourceDescriptor) connectionInfo.getDataSourceContainer();
@@ -487,6 +489,68 @@ public class WebServiceCore implements DBWServiceCore {
             WSConstants.EventAction.CREATE,
             WSDataSourceProperty.CONFIGURATION
         );
+        return connectionInfo;
+    }
+
+    @Override
+    public WebConnectionInfo createDriDatasource(
+            @NotNull WebSession webSession,
+            @Nullable String projectId,
+            @NotNull String connectionId,
+             String dbname,
+             String datasourceName
+    ) throws DBWebException {
+
+        WebConnectionInfo connectionInfo = WebDataSourceUtils.getWebConnectionInfo(webSession, projectId, connectionId);
+        try{
+            //获取用户
+            String userId = connectionInfo.getSession().getUserId();
+            DBPConnectionConfiguration connectionConfiguration = connectionInfo.getDataSourceContainer().getConnectionConfiguration();
+            String userName = connectionConfiguration.getUserName();
+            String password = connectionConfiguration.getUserPassword();
+            String hostName = connectionConfiguration.getHostName();
+            String hostPort = connectionConfiguration.getHostPort();
+            String url = connectionConfiguration.getUrl();
+            //配置的额外参数
+            Map<String, String> properties = connectionConfiguration.getProperties();
+            String extraParams = "";
+            if (url.contains("mysql")){
+                extraParams = properties.entrySet()
+                        .stream()
+                        .map(entry -> entry.getKey() + "=" + entry.getValue())
+                        .collect(Collectors.joining("&"));
+            }
+
+            //该连接没有设置持久化密码，所以无法获取
+            if (password == null ){
+                throw new DBWebException("为DRI创建数据源失败！此连接需启用密码持久化功能!");
+            }
+
+            //jdbc:mysql://localhost:3306/ 格式
+            if (url != null && url.endsWith("/")){
+                url = url + dbname;
+            } else {
+                //jdbc:mysql://localhost:3306/indaas_log  格式
+                url = url.substring(0,url.lastIndexOf("/")) + dbname;
+            }
+
+            System.out.println(connectionInfo.getDataSourceContainer().getConnectionConfiguration().toString());
+            log.info("自定义接口调用-------" + dbname);
+            log.info("自定义接口调用---url----" + url);
+            log.info("自定义接口调用---userName----" + userName);
+            log.info("自定义接口调用----password---" + password);
+            log.info("自定义接口调用----datasourceName---" + datasourceName);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("host",hostName);
+            jsonObject.addProperty("port",hostPort);
+            jsonObject.addProperty("database",dbname);
+            jsonObject.addProperty("username",userName);
+            jsonObject.addProperty("password",password);
+            jsonObject.addProperty("extraParams",extraParams);
+            DriDatasourceService.createDriDatasource(datasourceName,jsonObject,url,userId);
+        } catch(Exception e){
+            throw new DBWebException("创建数据源失败！", e);
+        }
         return connectionInfo;
     }
 

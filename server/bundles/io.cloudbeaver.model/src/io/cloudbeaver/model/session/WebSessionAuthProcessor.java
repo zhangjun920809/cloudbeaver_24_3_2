@@ -82,8 +82,8 @@ public class WebSessionAuthProcessor {
 
     @SuppressWarnings("unchecked")
     private List<WebAuthInfo> finishWebSessionAuthorization(SMAuthInfo authInfo) throws DBException {
-        boolean configMode = ServletAppUtils.getServletApplication().isConfigurationMode();
-        boolean alreadyLoggedIn = webSession.getUser() != null;
+        boolean configMode = ServletAppUtils.getServletApplication().isConfigurationMode();//false
+        boolean alreadyLoggedIn = webSession.getUser() != null;//false
         boolean resetUserStateOnError = !alreadyLoggedIn;
 
         try {

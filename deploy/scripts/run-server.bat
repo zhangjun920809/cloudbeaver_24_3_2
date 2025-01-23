@@ -1,6 +1,10 @@
 @echo off
+
+if "%CARBON_HOME%"=="" set CARBON_HOME=%~sdp0
+
 for /f %%a in ('dir /B /S server\plugins\org.jkiss.dbeaver.launcher*.jar') do SET launcherJar="%%a"
 
+echo %CARBON_HOME%
 echo "Starting Cloudbeaver Server"
 
 IF NOT EXIST workspace\.metadata (

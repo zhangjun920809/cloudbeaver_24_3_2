@@ -216,7 +216,7 @@ public class WebUserContext implements SMCredentialsProvider {
      */
     public synchronized void refreshPermissions() throws DBException {
         if (isAuthorizedInSecurityManager()) {
-            log.debug("refresh permissions " + getUserId() + " " + getSmSessionId());
+            log.debug("refresh permissions " + getUserId() + " " + getSmSessionId()); // 此处错误
             setUserPermissions(securityController.getTokenPermissions().getPermissions());
         } else {
             setUserPermissions(getDefaultPermissions());

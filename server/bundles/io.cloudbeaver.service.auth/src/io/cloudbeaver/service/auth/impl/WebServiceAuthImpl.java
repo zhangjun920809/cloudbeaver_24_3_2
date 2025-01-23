@@ -63,8 +63,8 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
     private static final Log log = Log.getLog(WebServiceAuthImpl.class);
     public static final String CONFIG_TEMP_ADMIN_USER_ID = "temp_config_admin";
 
-    @Override
-    public WebAuthStatus authLogin(
+//    @Override
+    public WebAuthStatus authLogin_new(
         @NotNull WebSession webSession,
         @NotNull String providerId,
         @Nullable String providerConfigurationId,
@@ -101,6 +101,62 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
                 forceSessionsLogout//false
             );
 
+            linkWithActiveUser = linkWithActiveUser && CBApplication.getInstance().getAppConfiguration().isLinkExternalCredentialsWithUser();
+            if (smAuthInfo.getAuthStatus() == SMAuthStatus.IN_PROGRESS) {
+                //run async auth process
+                return new WebAuthStatus(smAuthInfo.getAuthAttemptId(), smAuthInfo.getRedirectUrl(), smAuthInfo.getAuthStatus());
+            } else {// 执行
+                //run it sync
+//                var authProcessor = new WebSessionAuthProcessor(webSession, smAuthInfo, linkWithActiveUser);
+//                return new WebAuthStatus(smAuthInfo.getAuthStatus(), authProcessor.authenticateSession());
+                return new WebAuthStatus(smAuthInfo.getAuthStatus(), null);
+            }
+        } catch (SMTooManySessionsException e) {
+            throw new DBWebException("User authentication failed", e.getErrorType(), e);
+        } catch (Exception e) {
+            throw new DBWebException("User authentication failed", e);
+        }
+
+    }
+
+    public WebAuthStatus authLogin(
+            @NotNull WebSession webSession,
+            @NotNull String providerId,
+            @Nullable String providerConfigurationId,
+            @Nullable Map<String, Object> authParameters,
+            boolean linkWithActiveUser,
+            boolean forceSessionsLogout
+    ) throws DBWebException {
+        if (CommonUtils.isEmpty(providerId)) {
+            throw new DBWebException("Missing auth provider parameter");
+        }
+        WebAuthProviderDescriptor authProviderDescriptor = WebAuthProviderRegistry.getInstance()
+                .getAuthProvider(providerId);
+        if (authProviderDescriptor.isTrusted()) {
+            throw new DBWebException(authProviderDescriptor.getLabel() + " not allowed for authorization via GQL API");
+        }
+        if (authParameters == null) {
+            authParameters = Map.of();
+        }
+        //CBEmbeddedSecurityController类型，登录入口
+        SMController securityController = webSession.getSecurityController();
+        String currentSmSessionId = (webSession.getUser() == null || CBApplication.getInstance().isConfigurationMode())
+                ? null
+                : webSession.getUserContext().getSmSessionId();
+
+        try {
+//            var smAuthInfo = securityController.authenticateBak(//认证方法 原始认证方法
+            var smAuthInfo = securityController.authenticateBak(//认证方法，新增认证方法
+                    webSession.getSessionId(),
+                    currentSmSessionId,//null
+                    webSession.getSessionParameters(),//登录地址和浏览器信息
+                    WebSession.CB_SESSION_TYPE, //CloudBeaver
+                    providerId,//local
+                    providerConfigurationId,//null
+                    authParameters,//用户名和密码
+                    forceSessionsLogout//false
+            );
+            //false
             linkWithActiveUser = linkWithActiveUser && CBApplication.getInstance().getAppConfiguration().isLinkExternalCredentialsWithUser();
             if (smAuthInfo.getAuthStatus() == SMAuthStatus.IN_PROGRESS) {
                 //run async auth process

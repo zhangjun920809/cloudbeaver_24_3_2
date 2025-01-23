@@ -198,10 +198,10 @@ public class CBStaticServlet extends DefaultServlet {
             pathInContext = "index.html";
         }
 
-        if ("/drawdb".equals(pathInContext)) {
+        if ("/visualmodel".equals(pathInContext)) {
             pathInContext = "drawdb.html";
         }
-        if (pathInContext == null || (!pathInContext.endsWith("index.html") && !pathInContext.endsWith("drawdb.html"))
+        if (pathInContext == null || (!pathInContext.endsWith("index.html") && !pathInContext.endsWith("visualmodel.html"))
             && !pathInContext.endsWith("sso.html")
             && !pathInContext.endsWith("ssoError.html")
         ) {

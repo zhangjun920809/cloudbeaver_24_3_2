@@ -30,6 +30,7 @@ import io.cloudbeaver.registry.WebMetaParametersRegistry;
 import io.cloudbeaver.service.security.bruteforce.BruteForceUtils;
 import io.cloudbeaver.service.security.bruteforce.UserLoginRecord;
 import io.cloudbeaver.service.security.db.CBDatabase;
+import io.cloudbeaver.service.security.indaas.*;
 import io.cloudbeaver.service.security.internal.AuthAttemptSessionInfo;
 import io.cloudbeaver.service.security.internal.SMTokenInfo;
 import org.jkiss.code.NotNull;
@@ -62,6 +63,9 @@ import java.lang.reflect.Type;
 import java.sql.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -450,8 +454,8 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         return getUserTeams(getUserIdOrThrow());
     }
 
-    @Override
-    public SMUser getUserById(String userId) throws DBException {
+//    @Override
+    public SMUser getUserByIdOld(String userId) throws DBException {
         try (Connection dbCon = database.openConnection()) {
             SMUser user;
             try (PreparedStatement dbStat = dbCon.prepareStatement(
@@ -489,6 +493,17 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         } catch (SQLException e) {
             throw new DBCException("Error while searching credentials", e);
         }
+    }
+
+    @Override //新方法 ,userId 是用户名
+    public SMUser getUserById(String userId) throws DBException {
+        return IndaasService.getUserById(userId);
+    }
+
+//    @NotNull
+//    @Override
+    public SMUser getCurrentUserOld() throws DBException {
+        return getUserById(getUserIdOrThrow());
     }
 
     @NotNull
@@ -1543,11 +1558,11 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
     @Override
     public SMAuthInfo authenticate(
         @NotNull String appSessionId,
-        @Nullable String previousSmSessionId,
-        @NotNull Map<String, Object> sessionParameters,
-        @NotNull SMSessionType sessionType,
-        @NotNull String authProviderId,
-        @Nullable String authProviderConfigurationId,
+        @Nullable String previousSmSessionId,//null
+        @NotNull Map<String, Object> sessionParameters,//地址和浏览器信息
+        @NotNull SMSessionType sessionType,//Cloudbeaver
+        @NotNull String authProviderId,//local
+        @Nullable String authProviderConfigurationId,//null
         @NotNull Map<String, Object> userCredentials,
         boolean forceSessionsLogout
     ) throws DBException {
@@ -1623,7 +1638,122 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
                     return SMAuthInfo.inProgress(authAttemptId, signInLink, signOutLink, authData, isMainSession, forceSessionsLogout);
                 }
                 txn.commit();
-                return finishAuthentication(
+//                return finishAuthentication(
+//                    SMAuthInfo.inProgress(
+//                        authAttemptId,
+//                        null,
+//                        null,
+//                        Map.of(new SMAuthConfigurationReference(authProviderId, authProviderConfigurationId),
+//                            securedUserIdentifyingCredentials),
+//                        isMainSession,
+//                        forceSessionsLogout
+//                    ),
+//                    true,
+//                    forceSessionsLogout
+//                );
+                SMAuthInfo smAuthInfonew = finishAuthentication(  //登录主方法
+                        SMAuthInfo.inProgress(
+                                authAttemptId,
+                                null,
+                                null,
+                                Map.of(new SMAuthConfigurationReference("local", null),
+                                        securedUserIdentifyingCredentials),
+                                isMainSession,
+                                forceSessionsLogout
+                        ),
+                        true,
+                        forceSessionsLogout
+                );
+                return smAuthInfonew;
+            }
+        } catch (SQLException e) {
+            throw new DBException(e.getMessage(), e);
+        }
+    }
+    @Override
+    public SMAuthInfo authenticateBak(
+            @NotNull String appSessionId,
+            @Nullable String previousSmSessionId,//null
+            @NotNull Map<String, Object> sessionParameters,//地址和浏览器信息
+            @NotNull SMSessionType sessionType,//Cloudbeaver
+            @NotNull String authProviderId,//local
+            @Nullable String authProviderConfigurationId,//null
+            @NotNull Map<String, Object> userCredentials,
+            boolean forceSessionsLogout
+    ) throws DBException {
+        if (isProviderDisabled(authProviderId, authProviderConfigurationId)) {
+            throw new SMException("Unsupported authentication provider: " + authProviderId);
+        }
+        var authProgressMonitor = new LoggingProgressMonitor(log);
+        boolean isMainSession = previousSmSessionId == null;
+        try (Connection dbCon = database.openConnection()) {
+            try (JDBCTransaction txn = new JDBCTransaction(dbCon)) {
+                Map<String, Object> securedUserIdentifyingCredentials = userCredentials;
+                WebAuthProviderDescriptor authProviderDescriptor = getAuthProvider(authProviderId);
+                var authProviderInstance = authProviderDescriptor.getInstance();
+
+                SMAuthProviderCustomConfiguration providerConfig = authProviderConfigurationId == null
+                        ? null
+                        : application.getAuthConfiguration().getAuthProviderConfiguration(authProviderConfigurationId);
+
+                var filteredUserCreds = filterSecuredUserData(
+                        securedUserIdentifyingCredentials,
+                        authProviderDescriptor
+                );
+                String authAttemptId;
+                if (SMAuthProviderExternal.class.isAssignableFrom(authProviderInstance.getClass())) {
+                    var authProviderExternal = (SMAuthProviderExternal<?>) authProviderInstance;
+                    try {
+                        securedUserIdentifyingCredentials = authProviderExternal.authExternalUser(
+                                authProgressMonitor,
+                                providerConfig,
+                                userCredentials
+                        );
+                    } catch (DBException e) {
+                        createNewAuthAttempt(
+                                SMAuthStatus.ERROR,
+                                authProviderId,
+                                authProviderConfigurationId,
+                                filteredUserCreds,
+                                appSessionId,
+                                previousSmSessionId,
+                                sessionType,
+                                sessionParameters,
+                                isMainSession,
+                                null,
+                                forceSessionsLogout
+                        );
+                        throw e;
+                    }
+                }
+
+                authAttemptId = createNewAuthAttempt(
+                        SMAuthStatus.IN_PROGRESS,
+                        authProviderId,
+                        authProviderConfigurationId,
+                        filteredUserCreds,
+                        appSessionId,
+                        previousSmSessionId,
+                        sessionType,
+                        sessionParameters,
+                        isMainSession,
+                        null,
+                        forceSessionsLogout
+                );
+
+                if (SMAuthProviderFederated.class.isAssignableFrom(authProviderInstance.getClass())) {
+                    //async auth
+                    var authProviderFederated = (SMAuthProviderFederated) authProviderInstance;
+                    String signInLink = buildRedirectLink(authProviderFederated.getSignInLink(authProviderConfigurationId),
+                            authAttemptId);
+                    String signOutLink = authProviderFederated.getCommonSignOutLink(authProviderConfigurationId,
+                            providerConfig.getParameters());
+                    Map<SMAuthConfigurationReference, Object> authData = Map.of(new SMAuthConfigurationReference(authProviderId,
+                            authProviderConfigurationId), filteredUserCreds);
+                    return SMAuthInfo.inProgress(authAttemptId, signInLink, signOutLink, authData, isMainSession, forceSessionsLogout);
+                }
+                txn.commit();
+                return finishAuthenticationBak(
                     SMAuthInfo.inProgress(
                         authAttemptId,
                         null,
@@ -2167,12 +2297,12 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         SMTokens smTokens = null;
         SMAuthPermissions permissions = null;
         String activeUserId = null;
-        if (!isMainAuthSession) {
-            var accessToken = findTokenBySmSession(authAttemptSessionInfo.getSmSessionId()).getSmAccessToken();
-            //this is an additional authorization, and we should to return the original permissions and  userId
-            permissions = getTokenPermissions(accessToken);
-            activeUserId = permissions.getUserId();
-        }
+//        if (!isMainAuthSession) { //不走
+//            var accessToken = findTokenBySmSession(authAttemptSessionInfo.getSmSessionId()).getSmAccessToken();
+//            //this is an additional authorization, and we should to return the original permissions and  userId
+//            permissions = getTokenPermissions(accessToken);
+//            activeUserId = permissions.getUserId();
+//        }
 
         // we don't want to store sensitive information in the database,
         // but we can send it once to the user in sync auth
@@ -2212,18 +2342,212 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
                     detectedAuthRole = autoAssign.getAuthRole();
                 }
 
+                // 验证用户，返回用户名
                 var userIdFromCreds = findOrCreateExternalUserByCredentials(
-                    authProvider,
-                    authAttemptSessionInfo.getSessionParams(),
-                    providerAuthData,
-                    finishAuthMonitor,
-                    activeUserId,
-                    activeUserId == null,
-                    detectedAuthRole,
-                    providerConfig
+                        authProvider,
+                        authAttemptSessionInfo.getSessionParams(), // 地址和浏览器
+                        providerAuthData,//登录参数
+                        finishAuthMonitor,
+                        activeUserId, //null
+                        activeUserId == null, //true
+                        detectedAuthRole, //null
+                        providerConfig//null
                 );
 
-                if (userIdFromCreds == null) {
+                if (userIdFromCreds == null) {//成功，不走
+                    var error = "Invalid user credentials";
+                    updateAuthStatus(authId, SMAuthStatus.ERROR, dbStoredUserData, error, null);
+                    return SMAuthInfo.error(authId, error, isMainAuthSession, null);
+                }
+
+//                if (autoAssign != null && !CommonUtils.isEmpty(autoAssign.getExternalTeamIds())) {
+//                    if (allTeams == null) {
+//                        allTeams = readAllTeams();
+//                    }
+//                    autoUpdateUserTeams(authProvider, autoAssign, userIdFromCreds, allTeams);
+//                }
+
+                if (activeUserId == null) {
+                    activeUserId = userIdFromCreds;
+                }
+            }
+//            dbStoredUserData.put(
+//                authConfiguration,
+//                isAsyncAuth
+//                    ? providerAuthData
+//                    : filterSecuredUserData(providerAuthData, getAuthProvider(authProviderId))
+//            );
+//            sentToUserAuthData.put(
+//                authConfiguration,
+//                isAsyncAuth || (authProvider.getInstance() instanceof SMAuthProviderExternal<?>)
+//                    ? providerAuthData
+//                    : filterSecuredUserData(providerAuthData, getAuthProvider(authProviderId))
+//            );
+        }
+
+//        String tokenAuthRole = updateUserAuthRoleIfNeeded(activeUserId, detectedAuthRole);
+//        if (isMainAuthSession) {
+//            try (Connection dbCon = database.openConnection()) {
+//                try (JDBCTransaction txn = new JDBCTransaction(dbCon)) {
+//                    String smSessionId;
+//                    if (authAttemptSessionInfo.getSmSessionId() == null) {
+//                        smSessionId = createSmSession(
+//                            authAttemptSessionInfo.getAppSessionId(),
+//                            activeUserId,
+//                            authAttemptSessionInfo.getSessionParams(),
+//                            authAttemptSessionInfo.getSessionType(),
+//                            dbCon
+//                        );
+//                    } else {
+//                        smSessionId = authAttemptSessionInfo.getSmSessionId();
+//                    }
+//
+//                    if (forceSessionsLogout && CommonUtils.isNotEmpty(activeUserId) && isMainAuthSession) {
+//                        killAllExistsUserSessions(activeUserId);
+//                    }
+//                    smTokens = generateNewSessionToken(smSessionId, activeUserId, tokenAuthRole, dbCon);
+//
+//                    permissions = new SMAuthPermissions(
+//                        activeUserId, smSessionId, getUserPermissions(activeUserId, tokenAuthRole)
+//                    );
+//                    txn.commit();
+//                }
+//            } catch (SQLException e) {
+//                var error = "Error during token generation";
+//                updateAuthStatus(authId, SMAuthStatus.ERROR, dbStoredUserData, error, null);
+//                throw new SMException(error, e);
+//            }
+//        }
+//        var authStatus = isSyncAuth ? SMAuthStatus.EXPIRED : SMAuthStatus.SUCCESS;
+//        updateAuthStatus(authId, authStatus, dbStoredUserData, null, permissions.getSessionId(), null);
+        // 新增
+        HashMap<String, Object> userRole = LoginPorcess.getUserRole(activeUserId);
+
+        List<String> roleList = (List<String>)userRole.get("rolelist");
+        String tokenAuthRole = String.join(",", roleList);// 角色ADMINSTRATOR
+        log.info("activeUserId:"+activeUserId);
+        HashMap<String, String> token = LoginPorcess.getToken(activeUserId);
+        if (token.isEmpty()){
+            //重新生成token
+            //this.sessionId = UUID.randomUUID();
+            ZoneId zoneId = ZoneId.of("Asia/Shanghai");
+            ZonedDateTime createdAt = ZonedDateTime.now(zoneId);
+            int userValue = activeUserId.hashCode();
+            LocalSession session = new LocalSession(userValue, activeUserId, createdAt.plusSeconds(86400),
+                    createdAt.plusSeconds(50400));
+            // 获取当前用户拥有的门户权限,
+            PermissionDTO permission = LoginPorcess.getPermission(activeUserId);
+            LoginPorcess.saveSession(session,permission);
+            //再次获取token
+            token = LoginPorcess.getToken(activeUserId);
+        }
+        String sessionid = token.get("sessionid");
+        String refreshId = token.get("refreshId");
+
+        // 返回用户角色
+        Set<String> userRoles = LoginPorcess.getRoleByUserSet(activeUserId);
+        permissions = new SMAuthPermissions(
+                activeUserId, sessionid, userRoles);
+
+        if (isMainAuthSession) {
+            return SMAuthInfo.successMainSession(
+                authId,
+                sessionid,
+                //refresh token must be sent only from main session
+                refreshId,
+                permissions,
+                sentToUserAuthData,
+                tokenAuthRole
+            );
+        } else {
+            return SMAuthInfo.successChildSession(
+                authId,
+                permissions,
+                sentToUserAuthData
+            );
+        }
+    }
+
+    protected SMAuthInfo finishAuthenticationBak(
+            @NotNull SMAuthInfo authInfo,
+            boolean isSyncAuth,
+            boolean forceSessionsLogout
+    ) throws DBException {
+        boolean isAsyncAuth = !isSyncAuth;
+        String authId = authInfo.getAuthAttemptId();
+        if (authInfo.getAuthStatus() != SMAuthStatus.IN_PROGRESS) {
+            throw new SMException("Authorization has already been completed with status: " + authInfo.getAuthStatus());
+        }
+        Set<SMAuthConfigurationReference> authProviderIds = authInfo.getAuthData().keySet();
+        if (authProviderIds.isEmpty()) {
+            throw new SMException("Authorization providers are not defined");
+        }
+
+        DBRProgressMonitor finishAuthMonitor = new LoggingProgressMonitor(log);
+        AuthAttemptSessionInfo authAttemptSessionInfo = readAuthAttemptSessionInfo(authId);
+        boolean isMainAuthSession = authAttemptSessionInfo.isMainAuth();
+
+        SMTokens smTokens = null;
+        SMAuthPermissions permissions = null;
+        String activeUserId = null;
+        if (!isMainAuthSession) { //不走
+            var accessToken = findTokenBySmSession(authAttemptSessionInfo.getSmSessionId()).getSmAccessToken();
+            //this is an additional authorization, and we should to return the original permissions and  userId
+            permissions = getTokenPermissions(accessToken);
+            activeUserId = permissions.getUserId();
+        }
+
+        // we don't want to store sensitive information in the database,
+        // but we can send it once to the user in sync auth
+        Map<SMAuthConfigurationReference, Object> dbStoredUserData = new LinkedHashMap<>();
+        Map<SMAuthConfigurationReference, Object> sentToUserAuthData = new LinkedHashMap<>();
+
+        SMTeam[] allTeams = null;
+        SMAuthProviderCustomConfiguration providerConfig = null;
+        String detectedAuthRole = null;
+        for (SMAuthConfigurationReference authConfiguration : authProviderIds) {
+            String authProviderId = authConfiguration.getAuthProviderId();
+            WebAuthProviderDescriptor authProvider = getAuthProvider(authProviderId);
+
+            {
+                // Read auth provider configuration.
+                // Note: if there are several auth providers in a row then we'll reuse provider config from previous one.
+                // This is how federated auth + native auth providers work as a couple.
+                String providerConfigId = readProviderConfigId(authInfo.getAuthAttemptId(), authProvider.getId());
+                if (providerConfigId != null) {
+                    var providerCustomConfig =
+                            application.getAuthConfiguration().getAuthProviderConfiguration(providerConfigId);
+                    if (providerCustomConfig != null) {
+                        providerConfig = providerCustomConfig;
+                    }
+                }
+            }
+
+            Map<String, Object> providerAuthData = new LinkedHashMap<>(
+                    (Map<String, Object>) authInfo.getAuthData().get(authConfiguration)
+            );
+
+
+            if (isMainAuthSession) {
+                SMAutoAssign autoAssign =
+                        getAutoAssignUserData(authProvider, providerConfig, providerAuthData, finishAuthMonitor);
+                if (autoAssign != null) {
+                    detectedAuthRole = autoAssign.getAuthRole();
+                }
+
+                // 验证用户，返回用户名
+                var userIdFromCreds = findOrCreateExternalUserByCredentialsBak(
+                        authProvider,
+                        authAttemptSessionInfo.getSessionParams(), // 地址和浏览器
+                        providerAuthData,//登录参数
+                        finishAuthMonitor,
+                        activeUserId, //null
+                        activeUserId == null, //true
+                        detectedAuthRole, //null
+                        providerConfig//null
+                );
+
+                if (userIdFromCreds == null) {//成功，不走
                     var error = "Invalid user credentials";
                     updateAuthStatus(authId, SMAuthStatus.ERROR, dbStoredUserData, error, null);
                     return SMAuthInfo.error(authId, error, isMainAuthSession, null);
@@ -2292,19 +2616,19 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
 
         if (isMainAuthSession) {
             return SMAuthInfo.successMainSession(
-                authId,
-                smTokens.getSmAccessToken(),
-                //refresh token must be sent only from main session
-                smTokens.getSmRefreshToken(),
-                permissions,
-                sentToUserAuthData,
-                tokenAuthRole
+                    authId,
+                    smTokens.getSmAccessToken(),
+                    //refresh token must be sent only from main session
+                    smTokens.getSmRefreshToken(),
+                    permissions,
+                    sentToUserAuthData,
+                    tokenAuthRole
             );
         } else {
             return SMAuthInfo.successChildSession(
-                authId,
-                permissions,
-                sentToUserAuthData
+                    authId,
+                    permissions,
+                    sentToUserAuthData
             );
         }
     }
@@ -2466,10 +2790,91 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         String authRole,
         SMAuthProviderCustomConfiguration providerConfig
     ) throws DBException {
+        SMAuthProvider<?> smAuthProviderInstance = authProvider.getInstance();//local
+
+        String userName = CommonUtils.toString(userCredentials.get("user"), null);
+        String clientPassword = CommonUtils.toString(userCredentials.get("password"), null);
+        //此处编码传入密码参数，
+        String clientPasswordHash = AuthPropertyEncryption.hash.encrypt("", clientPassword.toLowerCase()).toLowerCase();
+        log.debug("编码后的密码clientPasswordHash:"+clientPasswordHash);
+        String userInfo = LoginPorcess.getUserInfo(userName, clientPasswordHash.toLowerCase());
+        log.debug("返回的用户userInfo:"+userInfo);
+        return userInfo;
+    }
+
+    //新增，验证cb中是否存在此用户
+    protected String checkCBUser(String userId) throws DBException {
+        try (Connection dbCon = database.openConnection()) {
+            try (PreparedStatement dbStat = dbCon.prepareStatement(
+                    database.normalizeTableNames("SELECT USER_ID FROM {table_prefix}CB_USER WHERE USER_ID=?")
+            )) {
+                dbStat.setString(1, userId);
+                try (ResultSet dbResult = dbStat.executeQuery()) {
+                    if (!dbResult.next()) {
+                        return null;
+                    }
+                    return dbResult.getString(1);
+
+                }
+            }
+        } catch (SQLException e) {
+            throw new DBException("Failed to update user auth role", e);
+        }
+    }
+
+    private String findOrCreateExternalUserByCredentialsBak(
+            @NotNull WebAuthProviderDescriptor authProvider,
+            @NotNull Map<String, Object> sessionParameters,
+            @NotNull Map<String, Object> userCredentials,
+            @NotNull DBRProgressMonitor progressMonitor,
+            @Nullable String activeUserId,
+            boolean createNewUserIfNotExist,
+            String authRole,
+            SMAuthProviderCustomConfiguration providerConfig
+    ) throws DBException {
         SMAuthProvider<?> smAuthProviderInstance = authProvider.getInstance();
 
+        // 判断用户在cb中是否存在
+        String user = checkCBUser(userCredentials.get("user").toString());
+        // todo 如果用户不存在就创建，此逻辑根据后面需求再优化
+        if (user == null ) {
+            // 再判断在dri中此用户是否存在以及状态
+            boolean checkresult = LoginPorcess.checkUser(userCredentials.get("user").toString(),userCredentials.get("password").toString().toLowerCase());
+            log.info("checkresult："+checkresult);
+            if (checkresult){
+                // 如果是admin角色，则创建admin角色
+                boolean isadmin = LoginPorcess.hashAdminRole(userCredentials.get("user").toString());
+                if (isadmin){
+                    log.debug("Create admin user: " + userCredentials.get("user").toString());
+                    database.createAdminUserForDri(userCredentials.get("user").toString(),userCredentials.get("password").toString());
+                } else {
+                    log.debug("Create user: " + userCredentials.get("user").toString());
+                    try (Connection dbCon = database.openConnection()) {
+                        createUser(
+                                dbCon,
+                                userCredentials.get("user").toString(),
+                                Map.of(),
+                                true,
+                                resolveUserAuthRole(null, authRole)
+                        );
+                    } catch (SQLException e) {
+                        throw new DBException("Error saving user in database", e);
+                    }
+                    setUserCredentials(userCredentials.get("user").toString(), authProvider.getId(), userCredentials);
+                }
+            }
+        } else {
+            // 判断用户密码是否正确
+            boolean checkresult = LoginPorcess.checkUser(userCredentials.get("user").toString(),userCredentials.get("password").toString());
+            log.info("dri中用户是否存在：" + checkresult);
+            //如果密码和dri中密码不匹配，返回null
+            if(!checkresult){
+                return null;
+            }
+        }
         String userId = findUserByCredentials(authProvider, userCredentials, true);
         String userIdFromCredentials;
+
         try {
             userIdFromCredentials = smAuthProviderInstance.validateLocalAuth(progressMonitor, this, providerConfig, userCredentials, null);
         } catch (DBException e) {
@@ -2478,33 +2883,35 @@ public class CBEmbeddedSecurityController<T extends ServletAuthApplication>
         }
         if (activeUserId != null && userId != null && !activeUserId.equals(userId)) {
             log.debug("User '" + activeUserId + "' is authenticated in '"
-                + authProvider.getId() + "' auth provider with credentials of user '"
-                + userIdFromCredentials + "'");
+                    + authProvider.getId() + "' auth provider with credentials of user '"
+                    + userIdFromCredentials + "'");
         }
-        if (userId == null && createNewUserIfNotExist) {
-            if (!(authProvider.getInstance() instanceof SMAuthProviderExternal<?>)) {
-                return null;
-            }
 
-            userId = authProvider.isCaseInsensitive() ? userIdFromCredentials.toLowerCase() : userIdFromCredentials;
-            if (!isSubjectExists(userId)) {
-                log.debug("Create user: " + userId);
-                try (Connection dbCon = database.openConnection()) {
-                    createUser(
-                        dbCon,
-                        userId,
-                        Map.of(),
-                        true,
-                        resolveUserAuthRole(null, authRole)
-                    );
-                } catch (SQLException e) {
-                    throw new DBException("Error saving user in database", e);
-                }
-            }
-            setUserCredentials(userId, authProvider.getId(), userCredentials);
-        } else if (userId == null) {
-            userId = userIdFromCredentials;
-        }
+//        if (userId == null && createNewUserIfNotExist) {
+//            if (!(authProvider.getInstance() instanceof SMAuthProviderExternal<?>)) {
+//                return null;
+//            }
+//
+//            userId = authProvider.isCaseInsensitive() ? userIdFromCredentials.toLowerCase() : userIdFromCredentials;
+//            if (!isSubjectExists(userId)) {
+//                log.debug("Create user: " + userId);
+//                try (Connection dbCon = database.openConnection()) {
+//                    createUser(
+//                            dbCon,
+//                            userId,
+//                            Map.of(),
+//                            true,
+//                            resolveUserAuthRole(null, authRole)
+//                    );
+//                } catch (SQLException e) {
+//                    throw new DBException("Error saving user in database", e);
+//                }
+//            }
+//            setUserCredentials(userId, authProvider.getId(), userCredentials);
+//
+//        } else if (userId == null) {
+//            userId = userIdFromCredentials;
+//        }
         if (authProvider.isTrusted()) {
             Object reverseProxyUserRole = sessionParameters.get(SMConstants.SESSION_PARAM_TRUSTED_USER_ROLE);
             if (reverseProxyUserRole instanceof String rpAuthRole) {

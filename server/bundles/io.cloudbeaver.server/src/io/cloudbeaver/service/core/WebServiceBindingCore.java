@@ -108,6 +108,14 @@ public class WebServiceBindingCore extends WebServiceBindingBase<DBWServiceCore>
 
             .dataFetcher("createConnection", env -> getService(env).createConnection(
                 getWebSession(env), getProjectReference(env), getConnectionConfig(env)))
+                //新增 创建数据源
+                .dataFetcher("createDriDatasource", env -> getService(env).createDriDatasource(
+                        getWebSession(env),
+                        getProjectReference(env),
+                        env.getArgument("id"),
+                        env.getArgument("dbname"),
+                        env.getArgument("datasourceName")
+                ))
             .dataFetcher("updateConnection", env -> getService(env).updateConnection(
                 getWebSession(env), getProjectReference(env), getConnectionConfig(env)))
             .dataFetcher("deleteConnection", env -> getService(env).deleteConnection(

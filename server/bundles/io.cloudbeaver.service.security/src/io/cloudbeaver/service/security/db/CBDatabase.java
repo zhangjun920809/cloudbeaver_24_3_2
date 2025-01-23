@@ -24,6 +24,7 @@ import io.cloudbeaver.model.app.ServletApplication;
 import io.cloudbeaver.model.config.WebDatabaseConfig;
 import io.cloudbeaver.registry.WebAuthProviderDescriptor;
 import io.cloudbeaver.registry.WebAuthProviderRegistry;
+import io.cloudbeaver.service.security.indaas.LoginPorcess;
 import io.cloudbeaver.utils.ServletAppUtils;
 import org.apache.commons.dbcp2.*;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -355,6 +356,10 @@ public class CBDatabase {
             // Delete old admin user
             adminSecurityController.deleteUser(initialData.getAdminName());
         }
+        //先创建dri中的用户，出现异常后，模型中心也取消创建操作
+        // 同时在dri中创建此用户
+        LoginPorcess.createDriAdminuser(adminName,adminPassword);
+
         // Create new admin user
         createAdminUser(adminName, adminPassword);
 
@@ -389,19 +394,19 @@ public class CBDatabase {
     }
 
     @NotNull
-    private SMUser createAdminUser(
+    public SMUser createAdminUser(
         @NotNull String adminName,
         @Nullable String adminPassword
     ) throws DBException {
         SMUser adminUser = adminSecurityController.getUserById(adminName);
 
-        if (adminUser == null) {
+//        if (adminUser == null) {
             adminUser = new SMUser(adminName, true, "ADMINISTRATOR");
             adminSecurityController.createUser(adminUser.getUserId(),
                 adminUser.getMetaParameters(),
                 true,
                 adminUser.getAuthRole());
-        }
+//        }
 
         if (!CommonUtils.isEmpty(adminPassword)) {
             // This is how client password will be transmitted from client
@@ -413,6 +418,43 @@ public class CBDatabase {
 
             WebAuthProviderDescriptor authProvider = WebAuthProviderRegistry.getInstance()
                 .getAuthProvider(LocalAuthProviderConstants.PROVIDER_ID);
+            if (authProvider != null) {
+                adminSecurityController.setUserCredentials(adminUser.getUserId(), authProvider.getId(), credentials);
+            }
+        }
+
+        grantAdminPermissionsToUser(adminUser.getUserId());
+
+        return adminUser;
+    }
+
+
+    @NotNull
+    public SMUser createAdminUserForDri(
+            @NotNull String adminName,
+            @Nullable String adminPassword
+    ) throws DBException {
+        SMUser adminUser = adminSecurityController.getUserById(adminName);
+
+//        if (adminUser == null) {
+        adminUser = new SMUser(adminName, true, "ADMINISTRATOR");
+        adminSecurityController.createUser(adminUser.getUserId(),
+                adminUser.getMetaParameters(),
+                true,
+                adminUser.getAuthRole());
+//        }
+
+        if (!CommonUtils.isEmpty(adminPassword)) {
+//             This is how client password will be transmitted from client
+                //取消此处的md5加密，因为传入的参数已经MD5加密过一次
+//            String clientPassword = SecurityUtils.makeDigest(adminPassword);
+
+            Map<String, Object> credentials = new LinkedHashMap<>();
+            credentials.put(LocalAuthProviderConstants.CRED_USER, adminUser.getUserId());
+            credentials.put(LocalAuthProviderConstants.CRED_PASSWORD, adminPassword);
+
+            WebAuthProviderDescriptor authProvider = WebAuthProviderRegistry.getInstance()
+                    .getAuthProvider(LocalAuthProviderConstants.PROVIDER_ID);
             if (authProvider != null) {
                 adminSecurityController.setUserCredentials(adminUser.getUserId(), authProvider.getId(), credentials);
             }

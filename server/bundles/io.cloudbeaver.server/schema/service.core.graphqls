@@ -638,6 +638,10 @@ extend type Mutation {
     # Test network handler
     testNetworkHandler( config: NetworkHandlerConfigInput! ): NetworkEndpointInfo!
 
+    # 创建数据源
+#    createDriDatasource( id: ID!, projectId: ID, dbname: String ): ConnectionInfo!
+    createDriDatasource( id: ID!, projectId: ID, dbname: String,datasourceName: String): ConnectionInfo!
+
     # Initiate existing connection
     initConnection( id: ID!, projectId: ID, credentials: Object, networkCredentials: [NetworkHandlerConfigInput!],
         saveCredentials:Boolean, sharedCredentials: Boolean, selectedSecretId:String ): ConnectionInfo!
