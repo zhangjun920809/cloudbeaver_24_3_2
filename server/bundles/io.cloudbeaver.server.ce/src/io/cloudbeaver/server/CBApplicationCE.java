@@ -74,6 +74,7 @@ public class CBApplicationCE extends CBApplication<CBServerConfig> {
             getServerConfiguration().getDatabaseConfiguration(),
             getServerConfiguration().getUserdatabaseConfiguration(),
             getServerConfiguration().getDbdatabaseConfiguration(),
+                getServerConfiguration().getEditordatabaseConfiguration(),
             new NoAuthCredentialsProvider(),
             getServerConfiguration().getSecurityManagerConfiguration()
         );

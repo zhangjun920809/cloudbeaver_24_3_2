@@ -1,21 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!-- 定义控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <Pattern>
-                %d{dd-MM-yyyy HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+                [%d] %-5level %replace(%replace(%logger){'cloudbeaver', 'indaas'}){'dbeaver', 'macro'}  - %msg%n
             </Pattern>
         </layout>
     </appender>
 
-    <!-- Disable logback status messages -->
+    <!-- 定义文件输出，按日期归档 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 当前日志文件路径（非归档文件） -->
+        <file>logs/indaas_log.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 按天归档，文件名格式：indaas_log_2025-02-03.log -->
+            <fileNamePattern>logs/indaas_log_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 日志文件最大保存 30 天 -->
+            <maxHistory>30</maxHistory>
+            <!-- 移除 SizeAndTimeBasedFNATP 配置，仅按时间归档 -->
+        </rollingPolicy>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                [%d] %-5level %replace(%replace(%logger){'cloudbeaver', 'indaas'}){'dbeaver', 'macro'}  - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <!-- 禁用 Logback 内部状态消息 -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <!-- 自定义包日志级别 -->
     <logger name="org.jkiss" level="DEBUG"/>
     <logger name="io.cloudbeaver" level="DEBUG"/>
 
+    <!-- 全局日志配置 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 
 </configuration>

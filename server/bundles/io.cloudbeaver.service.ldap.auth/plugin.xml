@@ -3,7 +3,7 @@
 
 <plugin>
     <extension point="org.jkiss.dbeaver.auth.provider">
-        <authProvider id="ldap" label="LDAP" description="LDAP authentication provider"
+        <authProvider id="ldap" label="LDAP验证" description="LDAP提供身份验证"
                       configurable="true"
                       class="io.cloudbeaver.service.ldap.auth.LdapAuthProvider"
                       icon="platform:/plugin/org.jkiss.dbeaver.model/icons/idp/ldap.png"

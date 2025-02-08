@@ -59,6 +59,9 @@ public class CBServerConfig implements WebServerConfiguration {
     @SerializedName("userdatabase")
     private UserDatabaseConfig userdatabaseConfiguration = new UserDatabaseConfig();
 
+    @SerializedName("editordatabase")
+    private EditorDatabaseConfig editordatabaseConfiguration = new EditorDatabaseConfig();
+
     private String staticContent = "";
     public DatasourceDatabaseConfig getDbdatabaseConfiguration() {
         return dbdatabaseConfiguration;
@@ -74,6 +77,14 @@ public class CBServerConfig implements WebServerConfiguration {
 
     public void setUserdatabaseConfiguration(UserDatabaseConfig userdatabaseConfiguration) {
         this.userdatabaseConfiguration = userdatabaseConfiguration;
+    }
+
+    public EditorDatabaseConfig getEditordatabaseConfiguration() {
+        return editordatabaseConfiguration;
+    }
+
+    public void setEditordatabaseConfiguration(EditorDatabaseConfig editordatabaseConfiguration) {
+        this.editordatabaseConfiguration = editordatabaseConfiguration;
     }
 
     public String getServerURL() {

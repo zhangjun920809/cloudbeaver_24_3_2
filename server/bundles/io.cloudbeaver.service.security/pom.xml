@@ -13,4 +13,30 @@
     <version>1.0.68-SNAPSHOT</version>
     <packaging>eclipse-plugin</packaging>
 
+<!--    不能注释-->
+    <dependencies>
+        <dependency>
+            <groupId>de.schlichtherle.truelicense</groupId>
+            <artifactId>truelicense-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.schlichtherle.truelicense</groupId>
+            <artifactId>truelicense-xml</artifactId>
+        </dependency>
+    </dependencies>
+
+<!--    <build>-->
+<!--      <plugins>-->
+
+<!--            <plugin>-->
+<!--                <groupId>org.eclipse.tycho</groupId>-->
+<!--                <artifactId>target-platform-configuration</artifactId>-->
+<!--                <version>4.0.9</version>-->
+<!--                <configuration>-->
+<!--                    <pomDependencies>wrapAsBundle</pomDependencies>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
+<!--        </plugins>-->
+<!--    </build>-->
 </project>

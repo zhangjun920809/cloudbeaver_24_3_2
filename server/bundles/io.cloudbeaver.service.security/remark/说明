@@ -1,0 +1,6 @@
+因新增的license相关依赖包无法正常buid,因此项目调试和打包时需要做以下修改：
+1、本地调试时，需在此模块META-INF/MANIFEST.MF文件中的Require-Bundle下添加以下内容
+ io.cloudbeaver.de.schlichtherle.truelicense.truelicense-xml,
+ io.cloudbeaver.de.schlichtherle.truelicense.truelicense-core
+
+2、build项目的时候，需要删除上面的内容，待项目打包完毕后，在生成的cloudbeaver项目中，修改此模块jar包中的MANIFEST.MF文件，添加第一步中的内容

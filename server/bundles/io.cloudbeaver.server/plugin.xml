@@ -58,10 +58,10 @@
     </extension>
 
     <extension point="org.jkiss.dbeaver.settings">
-        <propertyGroup id="log" label="Logger">
-            <property id="log.api.graphql.debug" label="Enable detailed logging"
+        <propertyGroup id="log" label="日志记录">
+            <property id="log.api.graphql.debug" label="启用详细日志"
                       type="boolean" scopes="global"
-                      description="Enable detailed logging of GraphQL queries in the server log, including all provided variables"/>
+                      description="在服务器日志中记录GraphQL查询日志，包括全部变量"/>
         </propertyGroup>
     </extension>
 
