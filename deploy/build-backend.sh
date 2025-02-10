@@ -5,20 +5,20 @@ set +u
 echo "Clone and build Cloudbeaver"
 
 rm -rf ./drivers
-rm -rf ./cloudbeaver
-mkdir ./cloudbeaver
-mkdir ./cloudbeaver/server
-mkdir ./cloudbeaver/conf
-mkdir ./cloudbeaver/workspace
+rm -rf ./indaasmdc
+mkdir ./indaasmdc
+mkdir ./indaasmdc/server
+mkdir ./indaasmdc/conf
+mkdir ./indaasmdc/workspace
 
-echo "Pull cloudbeaver platform"
+echo "Pull indaasmdc platform"
 
 cd ../..
 
-echo "Pull dbeaver platform"
-[ ! -d dbeaver ] && git clone --depth 1 https://github.com/dbeaver/dbeaver.git
-[ ! -d dbeaver-common ] && git clone --depth 1 https://github.com/dbeaver/dbeaver-common.git
-[ ! -d dbeaver-jdbc-libsql ] && git clone --depth 1 https://github.com/dbeaver/dbeaver-jdbc-libsql.git
+echo "已手动下载"
+#[ ! -d dbeaver ] && git clone --depth 1 https://github.com/dbeaver/dbeaver.git
+#[ ! -d dbeaver-common ] && git clone --depth 1 https://github.com/dbeaver/dbeaver-common.git
+#[ ! -d dbeaver-jdbc-libsql ] && git clone --depth 1 https://github.com/dbeaver/dbeaver-jdbc-libsql.git
 
 
 cd cloudbeaver/deploy
@@ -34,12 +34,12 @@ cd ../../../deploy
 
 echo "Copy server packages"
 
-cp -rp ../server/product/web-server/target/products/io.cloudbeaver.product/all/all/all/* ./cloudbeaver/server
-cp -p ./scripts/* ./cloudbeaver
-mkdir cloudbeaver/samples
+cp -rp ../server/product/web-server/target/products/io.cloudbeaver.product/all/all/all/* ./indaasmdc/server
+cp -p ./scripts/* ./indaasmdc
+mkdir indaasmdc/samples
 
-cp -rp  ../config/core/* cloudbeaver/conf
-cp -rp ../config/GlobalConfiguration/.dbeaver/data-sources.json cloudbeaver/conf/initial-data-sources.conf
-mv drivers cloudbeaver
+cp -rp  ../config/core/* indaasmdc/conf
+cp -rp ../config/GlobalConfiguration/.dbeaver/data-sources.json indaasmdc/conf/initial-data-sources.conf
+mv drivers indaasmdc
 
 echo "End of backend build"

@@ -5,7 +5,7 @@ if "%CARBON_HOME%"=="" set CARBON_HOME=%~sdp0
 for /f %%a in ('dir /B /S server\plugins\org.jkiss.dbeaver.launcher*.jar') do SET launcherJar="%%a"
 
 echo %CARBON_HOME%
-echo "Starting Cloudbeaver Server"
+echo "Starting InDaaSmd Server"
 
 IF NOT EXIST workspace\.metadata (
     IF NOT EXIST workspace\GlobalConfiguration\.dbeaver (
@@ -46,6 +46,6 @@ java %JAVA_OPTS% ^
     -jar  %launcherJar% ^
     -product io.cloudbeaver.product.ce.product ^
     -data %workspacePath% ^
-    -web-config conf/cloudbeaver.conf ^
+    -web-config conf/indaasmdc.conf ^
     -nl en ^
     -registryMultiLanguage

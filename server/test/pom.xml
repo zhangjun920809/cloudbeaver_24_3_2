@@ -59,7 +59,7 @@
                     <product>io.cloudbeaver.product.ce.product</product>
                     <testRuntime>default</testRuntime>
                     <testClass>io.cloudbeaver.test.platform.CEServerTestSuite</testClass>
-                    <appArgLine>-web-config workspace/conf/cloudbeaver.conf</appArgLine>
+                    <appArgLine>-web-config workspace/conf/indaasmdc.conf</appArgLine>
                     <argLine>-Dlogback.configurationFile=workspace/conf/logback.xml ${debugArgs}</argLine>
                 </configuration>
             </plugin>

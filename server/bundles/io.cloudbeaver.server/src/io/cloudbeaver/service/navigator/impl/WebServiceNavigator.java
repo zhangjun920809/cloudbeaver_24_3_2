@@ -86,20 +86,20 @@ public class WebServiceNavigator implements DBWServiceNavigator {
         Boolean onlyFolders
     ) throws DBWebException {
         try {
-            //测试数据源
-            try{
-                CBDatabase userdatabase = EmbeddedSecurityControllerFactory.getDbDbInstance();
-                Connection connection = userdatabase.openConnection();
-                String sql = "select * from indaas_database";
-                PreparedStatement preparedStatement = connection.prepareStatement(sql);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()){
-                    System.out.println(resultSet.getString("name"));
-                }
-
-            }catch (Exception e){
-                e.printStackTrace();
-            }
+//            //测试数据源
+//            try{
+//                CBDatabase userdatabase = EmbeddedSecurityControllerFactory.getDbDbInstance();
+//                Connection connection = userdatabase.openConnection();
+//                String sql = "select * from indaas_database";
+//                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+//                ResultSet resultSet = preparedStatement.executeQuery();
+//                while (resultSet.next()){
+//                    System.out.println(resultSet.getString("name"));
+//                }
+//
+//            }catch (Exception e){
+//                e.printStackTrace();
+//            }
             DBRProgressMonitor monitor = session.getProgressMonitor();
 
             DBNNode[] nodeChildren;

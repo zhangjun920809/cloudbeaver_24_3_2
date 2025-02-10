@@ -9,7 +9,7 @@ echo "project home " $CARBON_HOME
 
 launcherJar=( server/plugins/org.jkiss.dbeaver.launcher*.jar )
 
-echo "Starting Cloudbeaver Server"
+echo "Starting InDaaSmd Server"
 
 [ ! -d "workspace/.metadata" ] && mkdir -p workspace/.metadata \
   && mkdir -p workspace/GlobalConfiguration/.dbeaver  \
@@ -42,6 +42,6 @@ exec java ${JAVA_OPTS} \
   --add-opens=java.sql/java.sql=ALL-UNNAMED \
   -jar ${launcherJar} \
   -product io.cloudbeaver.product.ce.product \
-  -web-config conf/cloudbeaver.conf \
+  -web-config conf/indaasmdc.conf \
   -nl en \
   -registryMultiLanguage

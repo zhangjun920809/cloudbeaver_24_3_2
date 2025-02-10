@@ -8,7 +8,7 @@
     <configIni use="default">
     </configIni>
     <launcherArgs>
-        <programArgs>-web-config conf/cloudbeaver.conf -registryMultiLanguage</programArgs>
+        <programArgs>-web-config conf/indaasmdc.conf -registryMultiLanguage</programArgs>
         <programArgsMac></programArgsMac>
         <vmArgs>
             -Dfile.encoding=UTF-8 

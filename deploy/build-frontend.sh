@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 echo "Build static content"
 
-mkdir ./cloudbeaver/web
+mkdir ./indaasmdc/web
 
 cd ../../cloudbeaver/webapp
 
@@ -26,6 +26,6 @@ cd ../deploy
 
 echo "Copy static content"
 
-cp -rp ../webapp/packages/product-default/lib/* cloudbeaver/web
+cp -rp ../webapp/packages/product-default/lib/* indaasmdc/web
 
 echo "Cloudbeaver is ready. Run run-server.sh in cloudbeaver folder to start the server."
