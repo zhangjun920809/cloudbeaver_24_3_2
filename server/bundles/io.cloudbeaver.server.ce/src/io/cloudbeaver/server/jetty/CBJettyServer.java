@@ -23,6 +23,7 @@ import io.cloudbeaver.server.CBConstants;
 import io.cloudbeaver.server.graphql.GraphQLEndpoint;
 import io.cloudbeaver.server.servlets.CBImageServlet;
 import io.cloudbeaver.server.servlets.CBStaticServlet;
+import io.cloudbeaver.server.servlets.WebLicenseServlet;
 import io.cloudbeaver.server.servlets.WebStatusServlet;
 import io.cloudbeaver.server.websockets.CBEventsWebSocket;
 import io.cloudbeaver.server.websockets.CBWebSocketServerConfigurator;
@@ -114,6 +115,8 @@ public class CBJettyServer {
                 servletContextHandler.addServlet(imagesServletHolder, serverConfiguration.getServicesURI() + "images/*");
 
                 servletContextHandler.addServlet(new ServletHolder("status", new WebStatusServlet()), "/status");
+                //新增
+                servletContextHandler.addServlet(new ServletHolder("indaas", new WebLicenseServlet()), "/indaas/*");
 
                 servletContextHandler.addServlet(new ServletHolder("graphql", new GraphQLEndpoint()), serverConfiguration.getServicesURI() + "gql/*");
                 servletContextHandler.addEventListener(new CBServerContextListener(application));

@@ -35,6 +35,7 @@ import io.cloudbeaver.server.HttpConstants;
 import io.cloudbeaver.service.DBWBindingContext;
 import io.cloudbeaver.service.DBWServiceBindingGraphQL;
 import io.cloudbeaver.service.WebServiceBindingBase;
+import io.cloudbeaver.service.security.LicenseService;
 import io.cloudbeaver.utils.ServletAppUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -160,6 +161,12 @@ public class GraphQLEndpoint extends HttpServlet {
                 ? " content type is missing"
                 : " incorrect content type:" + contentType);
             response.sendError(400, error);
+            return;
+        }
+        // 验证license是否有效
+        boolean b = LicenseService.graphsqlChecklicense(request, response);
+        log.info(b);
+        if (!b){
             return;
         }
         String postBody = IOUtils.readToString(request.getReader());

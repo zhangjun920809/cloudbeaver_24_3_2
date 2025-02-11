@@ -2,6 +2,8 @@ package io.cloudbeaver.license.core;
 
 import com.data.provider.entity.CustomVerify;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
 import com.google.gson.reflect.TypeToken;
 import de.schlichtherle.license.LicenseContent;
 import de.schlichtherle.license.LicenseManager;
@@ -25,7 +27,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class LicenseVerify {
-    private static Gson gson = new Gson();
+    public static Gson gson = new GsonBuilder()
+            .setObjectToNumberStrategy(ToNumberPolicy.LAZILY_PARSED_NUMBER)  // 设置宽松模式
+            .create();
     private String publicKeysStorePath ;
     private String licensePath;
     private String storePass = "hongyi2020";

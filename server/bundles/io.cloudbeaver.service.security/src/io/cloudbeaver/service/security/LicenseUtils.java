@@ -1,6 +1,8 @@
 package io.cloudbeaver.service.security;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
 import de.schlichtherle.license.LicenseContent;
 import io.cloudbeaver.license.core.LicenseInstall;
 import io.cloudbeaver.license.core.LicenseVerify;
@@ -21,7 +23,9 @@ public class LicenseUtils {
     public static boolean checkIssuccess = false;
     public static Date expireDate = null;
     public static Long expireDays = null;
-    public static Gson gson =  new Gson();
+    public static Gson gson = new GsonBuilder()
+            .setObjectToNumberStrategy(ToNumberPolicy.LAZILY_PARSED_NUMBER)
+            .create();
     public static HashMap<String,Object> installMessage = new HashMap<>();
 
     public LicenseUtils() {
@@ -112,6 +116,33 @@ public class LicenseUtils {
         return hashMap;
     }
 
+
+    private static HashMap<String, Object> getLicenseParams2() throws Exception{
+        HashMap<String, Object> hashMap =  new HashMap<>();
+        try{
+            //获取参数前，需先验证license是否安装成功
+            if(!installIsSuccess){
+                return hashMap;
+            }
+            LicenseVerify licenseVerify = new LicenseVerify();
+            String params = licenseVerify.getParams();
+//            ;{:macs [42-3B-2D-E7-37-3A], :spare2 0, :dashboardCount 30, :ips [172.16.1.27], :spare1 0, :ipCheck false, :taskCount 20, :userCount 10, :cpuCheck false,
+//                ; :macCheck false, :boards VMware-56 4d e8 0e 52 73 6a 95-b2 38 64 ac e9 57 5a 43, :boardCheck false, :cpus F2 06 03 00 FF FB CB 17}
+            if(params != null){
+                Gson gson1 = new Gson();
+                hashMap = gson1.fromJson(params, hashMap.getClass());
+                hashMap.remove("ipCheck");
+                hashMap.remove("cpuCheck");
+                hashMap.remove("macCheck");
+                hashMap.remove("boardCheck");
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            throw new Exception(e.getMessage());
+        }
+        return hashMap;
+    }
+
     /**
      * 获取服务器信息，包括cpu,ip 和当前用户，表盘数量
      * @return
@@ -138,10 +169,12 @@ public class LicenseUtils {
     private static boolean checkUserAndTask() throws Exception{
         long userCount = getUserCount();
         long taskcount = getTaskCount();
-        HashMap<String, Object> licenseParams = getLicenseParams();
-        int userCountLicense = (int)licenseParams.get("userCount");
-        int taskCountLicense = (int)licenseParams.get("taskCount");
-
+        HashMap<String, Object> licenseParams = getLicenseParams2();
+//        int userCountLicense = (int)licenseParams.get("userCount");
+//        int userCountLicense = (int)licenseParams.get("userCount");
+        int userCountLicense = ((Double)licenseParams.get("userCount")).intValue();
+//        int taskCountLicense = (int)licenseParams.get("taskCount");
+        int taskCountLicense = ((Double)licenseParams.get("taskCount")).intValue();
         return (userCountLicense >= userCount && taskCountLicense >= taskcount);
     }
 
@@ -169,14 +202,14 @@ public class LicenseUtils {
                     installMessage.put("result",true);
                 } else{
                     if(!checkUserTaskRestul){
-                        updateInstallMessage("您的License授权许可已超限，请升级您的License，或者登录管理用户和表盘数量以符合许可。");
+                        updateInstallMessage("您的License授权许可已超限，请升级您的License。");
                     }
                 }
                 logger.info("验证结果："+checkIssuccess);
             }
 
         }catch(Exception e){
-//            e.printStackTrace();
+            e.printStackTrace();
             logger.error(e.getMessage());
             checkIssuccess = false;
         }

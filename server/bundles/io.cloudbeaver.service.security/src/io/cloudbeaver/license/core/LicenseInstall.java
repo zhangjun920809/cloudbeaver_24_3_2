@@ -22,8 +22,8 @@ public class LicenseInstall {
     private static final Log log = Log.getLog(LicenseInstall.class);
 
 
-    private String publicKeysStorePath;
-    private String licensePath;
+    public static String publicKeysStorePath;
+    public static String licensePath;
 
     private String storePass = "hongyi2020";
     private String publicAlias = "publiccert";

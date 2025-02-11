@@ -11,6 +11,7 @@ mkdir indaasmdc\server
 mkdir indaasmdc\conf
 mkdir indaasmdc\workspace
 mkdir indaasmdc\web
+mkdir indaasmdc\license
 
 echo already download
 
@@ -35,6 +36,7 @@ echo Copy server packages
 
 xcopy /E /Q ..\server\product\web-server\target\products\io.cloudbeaver.product\all\all\all\* indaasmdc\server >NUL
 copy scripts\* indaasmdc >NUL
+copy license\* indaasmdc\license >NUL
 mkdir indaasmdc\samples
 
 

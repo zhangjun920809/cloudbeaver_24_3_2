@@ -95,10 +95,13 @@ public class EmbeddedSecurityControllerFactory<T extends ServletAuthApplication>
     ) throws DBException {
 
         LicenseInstall licenseInstall = new LicenseInstall();
-        try {
-            licenseInstall.init();
-        } catch (Exception e){
-            e.printStackTrace();
+        try{
+            //项目启动时安装license
+            LicenseUtils.installLisencNew();
+            //启动验证逻辑
+            LicenseUtils.scheduleTask();
+        }catch(Exception e){
+            log.error(""+e.getMessage());
         }
 
         if (DB_INSTANCE == null) {
