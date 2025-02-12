@@ -165,7 +165,6 @@ public class GraphQLEndpoint extends HttpServlet {
         }
         // 验证license是否有效
         boolean b = LicenseService.graphsqlChecklicense(request, response);
-        log.info(b);
         if (!b){
             return;
         }

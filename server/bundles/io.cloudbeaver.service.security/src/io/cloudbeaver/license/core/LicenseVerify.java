@@ -73,8 +73,18 @@ public class LicenseVerify {
             this.licensePath = dapHome + File.separator+"license"+File.separator+"license.lic";
         } else  {
             if (userDir != null ){
-                this.publicKeysStorePath = userDir + File.separator+"license"+File.separator+"publicCerts.store";
-                this.licensePath = userDir + File.separator+"license"+File.separator+"license.lic";
+                //dri的license，统一放到上一级目录，如果上一级目录没有，则使用原有逻辑
+                int i = userDir.lastIndexOf(File.separator);
+                String substring = userDir.substring(0, i);
+                this.publicKeysStorePath = substring + File.separator+"license"+File.separator+"publicCerts.store";
+                this.licensePath = substring + File.separator+"license"+File.separator+"license.lic";
+                String licenseDri = substring + File.separator+"license";
+                Path licenseDriPath = Paths.get(licenseDri);
+                //如果license目录不存在
+                if(!Files.exists(licenseDriPath)){
+                    this.publicKeysStorePath = userDir + File.separator+"license"+File.separator+"publicCerts.store";
+                    this.licensePath = userDir + File.separator+"license"+File.separator+"license.lic";
+                }
             }
         }
     }

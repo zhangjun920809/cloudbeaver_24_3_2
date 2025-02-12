@@ -179,10 +179,10 @@ public class LicenseService {
         boolean installIsSuccess = LicenseUtils.installIsSuccess;
         boolean checkIssuccess = LicenseUtils.checkIssuccess;
         HashMap<String, Object> installMessage = LicenseUtils.installMessage;
-        installMessage.forEach((k,v)->{
-            System.out.println("key:"+k);
-            System.out.println(v);
-        });
+//        installMessage.forEach((k,v)->{
+//            System.out.println("key:"+k);
+//            System.out.println(v);
+//        });
 
         if (!installIsSuccess || !checkIssuccess){
             try{
