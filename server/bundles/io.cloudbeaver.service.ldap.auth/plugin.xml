@@ -33,8 +33,8 @@
             </configuration>
             <credentials>
                 <propertyGroup label="Auth credentials">
-                    <property id="user-dn" label="User login" type="string" description="LDAP user name" user="true"/>
-                    <property id="password" label="User password" type="string" description="LDAP user password"
+                    <property id="user-dn" label="用户名" type="string" description="LDAP user name" user="true"/>
+                    <property id="password" label="密码" type="string" description="LDAP user password"
                               user="true" encryption="plain"/>
                 </propertyGroup>
             </credentials>
