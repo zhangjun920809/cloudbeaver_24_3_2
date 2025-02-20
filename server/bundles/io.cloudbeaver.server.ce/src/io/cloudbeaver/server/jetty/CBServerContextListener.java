@@ -25,7 +25,7 @@ import jakarta.servlet.SessionCookieConfig;
 public class CBServerContextListener implements ServletContextListener {
 
     // One week
-    //private static final int CB_SESSION_LIFE_TIME = 60 * 60 * 24 * 7;
+    private static final int CB_SESSION_LIFE_TIME = 60 * 60 * 24 * 7;
     private final CBApplication<?> application;
 
     public CBServerContextListener(CBApplication<?> application) {
@@ -34,13 +34,13 @@ public class CBServerContextListener implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent sce) {
         SessionCookieConfig cookieConfig = sce.getServletContext().getSessionCookieConfig();
-
-        cookieConfig.setComment("Cloudbeaver Session ID");
+        cookieConfig.setComment("mdc Session ID");
         //scf.setDomain(domain);
         //scf.setMaxAge(CB_SESSION_LIFE_TIME);
         cookieConfig.setPath(CBApplication.getInstance().getRootURI());
 //        cookieConfig.setSecure(application.getServerURL().startsWith("https"));
         cookieConfig.setHttpOnly(true);
+        cookieConfig.setMaxAge(CB_SESSION_LIFE_TIME);
         cookieConfig.setName(CBConstants.CB_SESSION_COOKIE_NAME);
     }
 

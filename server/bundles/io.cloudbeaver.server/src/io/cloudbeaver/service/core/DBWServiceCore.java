@@ -16,6 +16,8 @@
  */
 package io.cloudbeaver.service.core;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.cloudbeaver.DBWebException;
 import io.cloudbeaver.WebAction;
 import io.cloudbeaver.WebObjectId;
@@ -134,13 +136,14 @@ public interface DBWServiceCore extends DBWService {
     ) throws DBWebException;
 
     //创建数据源
-    @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})
+//    @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})
     WebConnectionInfo createDriDatasource(
             @NotNull WebSession webSession,
             @Nullable String projectId,
             @NotNull String connectionId,
             @NotNull String dbname,
-            @NotNull String datasourceName
+            @NotNull String datasourceName,
+            int businessId
     ) throws DBWebException;
 
     @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})
@@ -185,6 +188,10 @@ public interface DBWServiceCore extends DBWService {
 
     @WebAction
     List<WebProjectInfo> getProjects(@NotNull WebSession session);
+
+    //新增
+    @WebAction
+    List<BusinessDomainVO> getBusinessInfo(@NotNull WebSession session);
 
     ///////////////////////////////////////////
     // Folders

@@ -11,6 +11,7 @@ mkdir ./indaasmdc/server
 mkdir ./indaasmdc/conf
 mkdir ./indaasmdc/workspace
 mkdir ./indaasmdc/license
+mkdir ./indaasmdc/security
 
 echo "Pull indaasmdc platform"
 
@@ -38,6 +39,7 @@ echo "Copy server packages"
 cp -rp ../server/product/web-server/target/products/io.cloudbeaver.product/all/all/all/* ./indaasmdc/server
 cp -p ./scripts/* ./indaasmdc
 cp -p ./license/* ./indaasmdc/license
+cp -p ./security/* ./indaasmdc/security
 mkdir indaasmdc/samples
 
 cp -rp  ../config/core/* indaasmdc/conf

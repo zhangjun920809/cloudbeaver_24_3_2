@@ -450,6 +450,14 @@ type ProjectInfo {
     canViewResources: Boolean!
     resourceTypes: [RMResourceType!]!
 }
+#业务域对象,暂时放弃此方法，graphql 对树状结构支持不友好
+type BusinessInfo {
+    id: Int!
+    name: String!
+    desc: String
+    parentId: Int!
+    child: [BusinessInfo]
+}
 
 type LogEntry {
     time: DateTime
@@ -591,6 +599,8 @@ extend type Query {
     listProjects: [ ProjectInfo! ]!
 
     readSessionLog(maxEntries: Int, clearEntries: Boolean): [ LogEntry! ]!
+#    获取业务域列表
+    getBusinessInfo: BusinessInfo
 }
 
 extend type Mutation {
@@ -640,7 +650,7 @@ extend type Mutation {
 
     # 创建数据源
 #    createDriDatasource( id: ID!, projectId: ID, dbname: String ): ConnectionInfo!
-    createDriDatasource( id: ID!, projectId: ID, dbname: String,datasourceName: String): ConnectionInfo!
+    createDriDatasource( id: ID!, projectId: ID, dbname: String,datasourceName: String ,businessId: Int ): ConnectionInfo!
 
     # Initiate existing connection
     initConnection( id: ID!, projectId: ID, credentials: Object, networkCredentials: [NetworkHandlerConfigInput!],

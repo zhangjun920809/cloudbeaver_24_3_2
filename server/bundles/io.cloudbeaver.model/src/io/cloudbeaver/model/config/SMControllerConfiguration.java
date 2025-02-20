@@ -19,7 +19,9 @@ package io.cloudbeaver.model.config;
 
 public class SMControllerConfiguration {
     //in minutes
-    public static final int DEFAULT_ACCESS_TOKEN_TTL = 20;
+    // token 有效期
+//    public static final int DEFAULT_ACCESS_TOKEN_TTL = 20;
+    public static final int DEFAULT_ACCESS_TOKEN_TTL = 1440;
     public static final int DEFAULT_REFRESH_TOKEN_TTL = 4320; //72h
     public static final int DEFAULT_EXPIRED_AUTH_ATTEMPT_INFO_TTL = 60; //72h
 

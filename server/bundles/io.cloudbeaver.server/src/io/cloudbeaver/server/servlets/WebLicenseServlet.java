@@ -20,6 +20,7 @@ import com.google.gson.stream.JsonWriter;
 import io.cloudbeaver.server.CBConstants;
 import io.cloudbeaver.server.WebAppUtils;
 import io.cloudbeaver.service.security.LicenseService;
+import io.cloudbeaver.service.security.indaas.DriDatasourceService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -52,6 +53,8 @@ public class WebLicenseServlet extends DefaultServlet {
             licenseService.getServerinfo(request,response);
         } else if (requestURI.endsWith("licenseinfo")){
             licenseService.getLicenseinfo(request,response);
+        } else if (requestURI.endsWith("business")){
+            DriDatasourceService.getBusinessInfo(request,response);
         } else {
             response.sendError(404, "not found");
         }

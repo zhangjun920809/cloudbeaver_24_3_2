@@ -17,6 +17,7 @@
 package io.cloudbeaver.service.core.impl;
 
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.cloudbeaver.*;
 import io.cloudbeaver.model.*;
@@ -498,19 +499,23 @@ public class WebServiceCore implements DBWServiceCore {
             @Nullable String projectId,
             @NotNull String connectionId,
              String dbname,
-             String datasourceName
+             String datasourceName,
+             int businessId
     ) throws DBWebException {
 
         WebConnectionInfo connectionInfo = WebDataSourceUtils.getWebConnectionInfo(webSession, projectId, connectionId);
         try{
             //获取用户
             String userId = connectionInfo.getSession().getUserId();
-            DBPConnectionConfiguration connectionConfiguration = connectionInfo.getDataSourceContainer().getConnectionConfiguration();
+            DBPDataSourceContainer dataSourceContainer = connectionInfo.getDataSourceContainer();
+            DBPConnectionConfiguration connectionConfiguration = dataSourceContainer.getConnectionConfiguration();
             String userName = connectionConfiguration.getUserName();
             String password = connectionConfiguration.getUserPassword();
             String hostName = connectionConfiguration.getHostName();
             String hostPort = connectionConfiguration.getHostPort();
             String url = connectionConfiguration.getUrl();
+            String driver = dataSourceContainer.getDriver().getName();
+
             //配置的额外参数
             Map<String, String> properties = connectionConfiguration.getProperties();
             String extraParams = "";
@@ -534,12 +539,14 @@ public class WebServiceCore implements DBWServiceCore {
                 url = url.substring(0,url.lastIndexOf("/")) + dbname;
             }
 
-            System.out.println(connectionInfo.getDataSourceContainer().getConnectionConfiguration().toString());
-            log.info("自定义接口调用-------" + dbname);
-            log.info("自定义接口调用---url----" + url);
-            log.info("自定义接口调用---userName----" + userName);
-            log.info("自定义接口调用----password---" + password);
-            log.info("自定义接口调用----datasourceName---" + datasourceName);
+//            log.info(connectionInfo.getDataSourceContainer().getConnectionConfiguration().toString());
+//            log.info("自定义接口调用-------" + dbname);
+//            log.info("自定义接口调用-------" + businessId);
+//            log.info("自定义接口调用--driver-----" + driver);
+            log.info("数据源url:" + url);
+//            log.info("自定义接口调用---userName----" + userName);
+//            log.info("自定义接口调用----password---" + password);
+//            log.info("自定义接口调用----datasourceName---" + datasourceName);
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("host",hostName);
             jsonObject.addProperty("port",hostPort);
@@ -547,7 +554,7 @@ public class WebServiceCore implements DBWServiceCore {
             jsonObject.addProperty("username",userName);
             jsonObject.addProperty("password",password);
             jsonObject.addProperty("extraParams",extraParams);
-            DriDatasourceService.createDriDatasource(datasourceName,jsonObject,url,userId);
+            DriDatasourceService.createDriDatasource(datasourceName,jsonObject,url,userId,businessId,driver);
         } catch(Exception e){
             throw new DBWebException("创建数据源失败！", e);
         }
@@ -948,6 +955,12 @@ public class WebServiceCore implements DBWServiceCore {
         return session.getAccessibleProjects().stream()
             .map(pr -> new WebProjectInfo(session, pr, customConnectionsEnabled))
             .collect(Collectors.toList());
+    }
+    //新增
+    @Override
+    public List<BusinessDomainVO> getBusinessInfo(@NotNull WebSession session) {
+        List<BusinessDomainVO> businessInfo = null;
+        return businessInfo;
     }
 
     // Folders
