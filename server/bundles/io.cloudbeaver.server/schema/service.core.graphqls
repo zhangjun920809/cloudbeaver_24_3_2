@@ -650,7 +650,7 @@ extend type Mutation {
 
     # 创建数据源
 #    createDriDatasource( id: ID!, projectId: ID, dbname: String ): ConnectionInfo!
-    createDriDatasource( id: ID!, projectId: ID, dbname: String,datasourceName: String ,businessId: Int ): ConnectionInfo!
+    createDriDatasource( id: ID!, projectId: ID, dbname: String,datasourceName: String ,businessId: Int,descs: String): ConnectionInfo!
 
     # Initiate existing connection
     initConnection( id: ID!, projectId: ID, credentials: Object, networkCredentials: [NetworkHandlerConfigInput!],

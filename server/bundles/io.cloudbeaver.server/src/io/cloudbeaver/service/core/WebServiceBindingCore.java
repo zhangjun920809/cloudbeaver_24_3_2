@@ -117,7 +117,8 @@ public class WebServiceBindingCore extends WebServiceBindingBase<DBWServiceCore>
                         env.getArgument("id"),
                         env.getArgument("dbname"),
                         env.getArgument("datasourceName"),
-                        env.getArgument("businessId")
+                        env.getArgument("businessId"),
+                        env.getArgument("descs")
                 ))
             .dataFetcher("updateConnection", env -> getService(env).updateConnection(
                 getWebSession(env), getProjectReference(env), getConnectionConfig(env)))

@@ -26,14 +26,13 @@ public class DriDatasourceService {
     public static final Log log = Log.getLog(DriDatasourceService.class);
     public static final Gson gson = new Gson();
 
-    public static void createDriDatasource(String datasourceName, JsonObject jsonObject, String url,String user,int businessId,String driver){
+    public static void createDriDatasource(String datasourceName, JsonObject jsonObject, String url,String user,int businessId,String driver,String descs){
         Connection connection = null;
         PreparedStatement preparedStatement =  null;
-        List<String> rolelist = new ArrayList<>();
         try {
             CBDatabase dataSource = EmbeddedSecurityControllerFactory.getDbDbInstance();
             connection = dataSource.openConnection();
-            String sql =" insert into indaas_database (name,details,create_user,engine,status,jdbcurl,db_uuid) values(?,?,?,?,?,?,?)";
+            String sql =" insert into indaas_database (name,details,create_user,engine,status,jdbcurl,db_uuid,description) values(?,?,?,?,?,?,?,?)";
             preparedStatement = connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setString(1,datasourceName);
             preparedStatement.setString(2,gson.toJson(jsonObject));
@@ -41,8 +40,8 @@ public class DriDatasourceService {
             preparedStatement.setString(4,driver);
             preparedStatement.setString(5,"active");
             preparedStatement.setString(6,url);
-//            preparedStatement.setString(7,databaseDto.getBusinessSource());
             preparedStatement.setString(7, UUID.randomUUID().toString());
+            preparedStatement.setString(8, descs);
             boolean result = preparedStatement.executeUpdate() > 0 ? true : false;
 //            log.info("数据源添加操作执行完毕---" + result);
 //获取id

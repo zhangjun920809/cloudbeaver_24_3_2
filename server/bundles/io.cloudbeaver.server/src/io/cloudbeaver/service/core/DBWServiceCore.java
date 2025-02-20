@@ -143,7 +143,8 @@ public interface DBWServiceCore extends DBWService {
             @NotNull String connectionId,
             @NotNull String dbname,
             @NotNull String datasourceName,
-            int businessId
+            int businessId,
+            String descs
     ) throws DBWebException;
 
     @WebProjectAction(requireProjectPermissions = {RMConstants.PERMISSION_PROJECT_DATASOURCES_EDIT})

@@ -500,7 +500,8 @@ public class WebServiceCore implements DBWServiceCore {
             @NotNull String connectionId,
              String dbname,
              String datasourceName,
-             int businessId
+             int businessId,
+            String descs
     ) throws DBWebException {
 
         WebConnectionInfo connectionInfo = WebDataSourceUtils.getWebConnectionInfo(webSession, projectId, connectionId);
@@ -550,11 +551,11 @@ public class WebServiceCore implements DBWServiceCore {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("host",hostName);
             jsonObject.addProperty("port",hostPort);
-            jsonObject.addProperty("database",dbname);
+            jsonObject.addProperty("dataBase",dbname);
             jsonObject.addProperty("username",userName);
             jsonObject.addProperty("password",password);
             jsonObject.addProperty("extraParams",extraParams);
-            DriDatasourceService.createDriDatasource(datasourceName,jsonObject,url,userId,businessId,driver);
+            DriDatasourceService.createDriDatasource(datasourceName,jsonObject,url,userId,businessId,driver,descs);
         } catch(Exception e){
             throw new DBWebException("创建数据源失败！", e);
         }
