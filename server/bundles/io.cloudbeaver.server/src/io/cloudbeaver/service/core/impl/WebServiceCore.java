@@ -521,6 +521,11 @@ public class WebServiceCore implements DBWServiceCore {
             Map<String, String> properties = connectionConfiguration.getProperties();
             String extraParams = "";
             if (url.contains("mysql")){
+                properties.put("characterEncoding","UTF-8");
+                properties.put("useSSL","false");
+                properties.put("allowPublicKeyRetrieval","true");
+                properties.put("zeroDateTimeBehavior","convertToNull");
+                properties.put("useInformationSchema","true");
                 extraParams = properties.entrySet()
                         .stream()
                         .map(entry -> entry.getKey() + "=" + entry.getValue())
@@ -537,7 +542,7 @@ public class WebServiceCore implements DBWServiceCore {
                 url = url + dbname;
             } else {
                 //jdbc:mysql://localhost:3306/indaas_log  格式
-                url = url.substring(0,url.lastIndexOf("/")) + dbname;
+                url = url.substring(0,url.lastIndexOf("/")+1) + dbname;
             }
 
 //            log.info(connectionInfo.getDataSourceContainer().getConnectionConfiguration().toString());
