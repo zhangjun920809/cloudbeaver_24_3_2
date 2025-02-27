@@ -1,7 +1,6 @@
 package io.cloudbeaver.service.security.indaas;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import io.cloudbeaver.service.security.EmbeddedSecurityControllerFactory;
 import io.cloudbeaver.service.security.db.CBDatabase;
 import jakarta.servlet.http.Cookie;
@@ -9,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.auth.AuthPropertyEncryption;
 import org.jkiss.dbeaver.model.exec.DBCException;
-import org.json.simple.JSONObject;
 
 import java.net.URLEncoder;
 import java.sql.Connection;
@@ -155,6 +153,7 @@ public class LoginPorcess {
         // 添加 cookie 到响应
         response.addCookie(userCookie);
 
+        // 设置用户角色
         Set<String> roleByUserSet = getRoleByUserSet(userIdFromCreds);
         String s = gson.toJson(roleByUserSet);
 
@@ -165,6 +164,19 @@ public class LoginPorcess {
         roleCookie.setSecure(false);  // 仅通过 HTTPS 传输
         // 添加 cookie 到响应
         response.addCookie(roleCookie);
+
+        // 设置用户权限
+        PermissionDTO permission = session.getPermission();
+        String permissionStr = gson.toJson(permission);
+
+        Cookie permissionCookie = new Cookie("PERMISSION", URLEncoder.encode(permissionStr));
+        permissionCookie.setPath("/");  // 设置 cookie 的有效路径
+//        userCookie.setMaxAge(60 * 60 * 24);  // 设置 cookie 的有效期（1天）
+        permissionCookie.setHttpOnly(false);  // 防止 JavaScript 访问 cookie
+        permissionCookie.setSecure(false);  // 仅通过 HTTPS 传输
+        // 添加 cookie 到响应
+        response.addCookie(permissionCookie);
+
 
 /*        //设置 DRI-USER={"authUser":"admin","lID":"f2baf235-0fc7-44eb","pID":"14a9a60a-22fa-4c5e","validityPeriod":86400};
         // 前端设置，此处为了测试，临时添加
