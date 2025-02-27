@@ -120,9 +120,9 @@ public class LoginPorcess {
         String sessionid = session.getSessionId().toString();
         String pid = sessionid.substring(0, sessionid.length() / 2);
         String hid = sessionid.substring(sessionid.length() / 2);
-        log.info("sessionid:"+sessionid);
-        log.info("pid:"+pid);
-        log.info("hid:"+hid);
+//        log.info("sessionid:"+sessionid);
+//        log.info("pid:"+pid);
+//        log.info("hid:"+hid);
         pidSessionMap.put(user, pid);
         hidSessionMap.put(user, hid);
         // 将session持久化到数据库
@@ -154,6 +154,17 @@ public class LoginPorcess {
         userCookie.setSecure(false);  // 仅通过 HTTPS 传输
         // 添加 cookie 到响应
         response.addCookie(userCookie);
+
+        Set<String> roleByUserSet = getRoleByUserSet(userIdFromCreds);
+        String s = gson.toJson(roleByUserSet);
+
+        Cookie roleCookie = new Cookie("ROLE", URLEncoder.encode(s));
+        roleCookie.setPath("/");  // 设置 cookie 的有效路径
+//        userCookie.setMaxAge(60 * 60 * 24);  // 设置 cookie 的有效期（1天）
+        roleCookie.setHttpOnly(false);  // 防止 JavaScript 访问 cookie
+        roleCookie.setSecure(false);  // 仅通过 HTTPS 传输
+        // 添加 cookie 到响应
+        response.addCookie(roleCookie);
 
 /*        //设置 DRI-USER={"authUser":"admin","lID":"f2baf235-0fc7-44eb","pID":"14a9a60a-22fa-4c5e","validityPeriod":86400};
         // 前端设置，此处为了测试，临时添加

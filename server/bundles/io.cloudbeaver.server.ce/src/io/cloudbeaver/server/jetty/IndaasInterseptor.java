@@ -41,6 +41,10 @@ public class IndaasInterseptor implements Filter {
     public static void main(String[] args) {
 
     }
+
+    private boolean checkIfSkip(String operName) {
+        return "authLogout".equalsIgnoreCase(operName);
+    }
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
 
@@ -48,8 +52,22 @@ public class IndaasInterseptor implements Filter {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         HttpServletResponse httpServletresponse = (HttpServletResponse) response;
         // 创建可缓存的请求包装对象
-        CachedBodyHttpServletRequest wrappedRequest = new CachedBodyHttpServletRequest(httpServletRequest);
         boolean isSkip = false;
+        CachedBodyHttpServletRequest wrappedRequest = new CachedBodyHttpServletRequest(httpServletRequest);
+        try {
+            // 从包装后的请求中读取缓存体（无需再次调用getReader）
+            String postBody = wrappedRequest.getBody(); // 假设CachedBodyHttpServletRequest提供getBody方法
+            JsonElement json = gson.fromJson(postBody, JsonElement.class);
+            if (json instanceof JsonObject) {
+                String operNameJSON = ((JsonObject) json).get("operationName").getAsString();
+                // 检查需要跳过的操作名
+//                log.info("operNameJSON===="+operNameJSON);
+                isSkip = checkIfSkip(operNameJSON);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         if (isSkip){
             chain.doFilter(wrappedRequest, response);
         } else {
@@ -78,7 +96,7 @@ public class IndaasInterseptor implements Filter {
                     pid =  hashMap.get("pID");
                 }
             }
-            log.info("driUserCookie:"+driUserCookie);
+//            log.info("driUserCookie:"+driUserCookie);
             // 获取携带的Cookie (dir项目返回的cookie格式不一致)
             HashMap<String, Object> map = new HashMap<>();
             try {
@@ -86,16 +104,18 @@ public class IndaasInterseptor implements Filter {
                     throw new Exception("验证失败，请重新登录！");
                 }
                 String modelcenter = LoginPorcess.authenticateDB(null, pid, "modelcenter");
-                log.info("modelcenter验证结果："+modelcenter);
+//                log.info("modelcenter验证结果："+modelcenter);
                 //  验证cb原有逻辑
                 Map<String, Object> authParameters = new HashMap<>();
                 WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession((HttpServletRequest) request, (HttpServletResponse) response);
                 String userId = webSession.getUserId();
-                log.info("webSession.getUserId():"+userId);
+//                log.info("webSession.getUserId():"+userId);
                 // userId == null，表示cb自身的登录没有进行，modelcenter 不等于 userId 表示dri和cb当前登录用户不是同一个，也需要重新执行
                 if(userId == null || (!modelcenter.equalsIgnoreCase(userId))){
-                    // 先移除websession
-                    WebAppUtils.getWebApplication().getSessionManager().closeSession((HttpServletRequest) request);
+                    if (userId != null && (!modelcenter.equalsIgnoreCase(userId))){
+                        // 先移除websession
+                        WebAppUtils.getWebApplication().getSessionManager().closeSession((HttpServletRequest) request);
+                    }
                     //再新建websession
                     SMController securityController = webSession.getSecurityController();
                     String currentSmSessionId = (webSession.getUser() == null || CBApplication.getInstance().isConfigurationMode())
@@ -118,20 +138,18 @@ public class IndaasInterseptor implements Filter {
 
                 chain.doFilter(wrappedRequest, response);
             } catch (Exception e) {
-                e.printStackTrace();
-//            ((HttpServletResponse) response).sendRedirect("/#/login");  //无法跳转
+                log.error(e.getMessage());
                 // 失败后，删除cb原有的websession
                 try {
                     //删除sessionid对应的websession对象
                     WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession((HttpServletRequest) request, (HttpServletResponse) response);
                     String userId = webSession.getUserId();
-                    log.info("webSession.getUserId():"+userId);
                     if(userId != null ){
                         // 移除websession
                         WebAppUtils.getWebApplication().getSessionManager().closeSession((HttpServletRequest) request);
                     }
                 } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+                    log.error(e.getMessage());
                 }
                 chain.doFilter(wrappedRequest, response);
             }
