@@ -16,22 +16,39 @@
  */
 package io.cloudbeaver.server.servlets;
 
+import com.google.gson.Gson;
 import com.google.gson.stream.JsonWriter;
+import io.cloudbeaver.DBWebException;
+import io.cloudbeaver.WebProjectImpl;
+import io.cloudbeaver.WebServiceUtils;
+import io.cloudbeaver.WebSessionProjectImpl;
+import io.cloudbeaver.model.WebConnectionFolderInfo;
+import io.cloudbeaver.model.session.WebSession;
 import io.cloudbeaver.server.CBConstants;
 import io.cloudbeaver.server.WebAppUtils;
 import io.cloudbeaver.service.security.LicenseService;
 import io.cloudbeaver.service.security.indaas.DriDatasourceService;
+import io.cloudbeaver.utils.WebConnectionFolderUtils;
+import io.cloudbeaver.utils.WebEventUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
+import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.Log;
+import org.jkiss.dbeaver.model.DBPDataSourceFolder;
+import org.jkiss.dbeaver.model.app.DBPDataSourceRegistry;
 import org.jkiss.dbeaver.model.data.json.JSONUtils;
+import org.jkiss.dbeaver.model.navigator.DBNLocalFolder;
+import org.jkiss.dbeaver.model.websocket.WSConstants;
 import org.jkiss.dbeaver.utils.GeneralUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,7 +57,7 @@ import java.util.Map;
 public class WebLicenseServlet extends DefaultServlet {
 
     private static final Log log = Log.getLog(WebLicenseServlet.class);
-
+    public static final Gson gson = new Gson();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         LicenseService licenseService = new LicenseService();
@@ -59,19 +76,119 @@ public class WebLicenseServlet extends DefaultServlet {
             response.sendError(404, "not found");
         }
     }
+
+    public static void main(String[] args) {
+
+    }
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        LicenseService licenseService = new LicenseService();
-        String requestURI = request.getRequestURI();
-        String contentType = request.getContentType();
-        if (requestURI.endsWith("upload")){
-            licenseService.installLicense(request,response);
-        } else {
-            response.sendError(404, "not found");
+        try {
+
+                String requestURI = request.getRequestURI();
+                if(requestURI.endsWith("syncbusiness")){
+                    WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession(request,response);
+                    String userId = webSession.getUserId();
+                    if (userId != null){
+                        Map<String, String> stringStringMap = DriDatasourceService.flattenTree();
+                        stringStringMap.remove("全部业务域");
+                        stringStringMap = replaceValue(stringStringMap,"全部业务域/","");
+                        stringStringMap.forEach((key, value) ->{
+                                    createConnectionFolder(webSession,"g_GlobalConfiguration",value,key);
+//                                    System.out.println(key + ": " + value);
+                                });
+
+                        HashMap<String, Object> map = new HashMap<>();
+                        map.put("message", "业务域目录同步完成！");
+                        map.put("code", 200);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter().write(gson.toJson(map));
+                    } else {
+                        response.sendError(401, "未通过认证！");
+                    }
+
+                } else if(requestURI.endsWith("upload")){
+                    LicenseService licenseService = new LicenseService();
+                    licenseService.installLicense(request,response);
+                } else {
+                        response.sendError(404, "not found");
+                }
+
+//            } else {
+//                response.sendError(404, "认证未通过");
+//            }
+        } catch (DBWebException e) {
+            throw new RuntimeException(e);
         }
 
     }
+
+    public void createConnectionFolder(
+            @NotNull WebSession session,
+            @Nullable String projectId,
+            @Nullable String parentPath,
+            @NotNull String folderName
+    ) {
+
+        try {
+            WebConnectionFolderUtils.validateConnectionFolder(folderName);
+            session.addInfoMessage("Create new folder");
+            WebConnectionFolderInfo parentNode = null;
+            if (parentPath.equals(folderName)){
+                parentPath = null;
+            }
+            if (parentPath != null) {
+                parentNode = WebConnectionFolderUtils.getFolderInfo(session, projectId, parentPath);
+            }
+            WebProjectImpl project = getProjectById(session, projectId);
+            DBPDataSourceRegistry sessionRegistry = project.getDataSourceRegistry();
+            DBPDataSourceFolder newFolder = WebConnectionFolderUtils.createFolder(parentNode,
+                    folderName,
+                    sessionRegistry);
+            WebConnectionFolderInfo folderInfo = new WebConnectionFolderInfo(session, newFolder);
+            WebServiceUtils.updateConfigAndRefreshDatabases(session, projectId);
+            WebEventUtils.addNavigatorNodeUpdatedEvent(
+                    session.getProjectById(projectId),
+                    session,
+                    DBNLocalFolder.makeLocalFolderItemPath(newFolder),
+                    WSConstants.EventAction.CREATE
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private WebSessionProjectImpl getProjectById(WebSession webSession, String projectId) throws DBWebException {
+        WebSessionProjectImpl project = webSession.getProjectById(projectId);
+        if (project == null) {
+            throw new DBWebException("Project '" + projectId + "' not found");
+        }
+        return project;
+    }
+
+    /**
+     * 替换 Map 中所有 value 的指定字符串
+     *
+     * @param map       需要处理的 Map
+     * @param target    需要替换的目标字符串
+     * @param replacement 替换后的字符串
+     */
+    private static Map<String, String> replaceValue(Map<String, String> map, String target, String replacement) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String value = entry.getValue();
+            String key = entry.getKey();
+            if (value != null) {
+                // 替换目标字符串
+                String newValue = value.replace(target, replacement);
+                newValue = newValue.replace("/"+key,"");
+
+                entry.setValue(newValue);
+            }
+        }
+        return map;
+    }
+
 
 }
 

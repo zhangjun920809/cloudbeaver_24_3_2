@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jkiss.dbeaver.Log;
 import org.jkiss.utils.BeanUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
@@ -25,6 +26,49 @@ import java.util.*;
 public class DriDatasourceService {
     public static final Log log = Log.getLog(DriDatasourceService.class);
     public static final Gson gson = new Gson();
+
+    public static void main(String[] args) {
+
+    }
+    /**
+     * 扁平化树状结构
+     *
+     * @return 扁平化后的 Map
+     */
+    public static Map<String, String> flattenTree() {
+        List<BusinessDomainDto> resources = getAllBusiness();
+        List<BusinessDomainVO> resourcevo= getBusinessDomainTree(-1,resources);
+        BusinessDomainVO root = resourcevo.get(0);
+        Map<String, String> result = new HashMap<>();
+        flattenTreeHelper(root, "", result);
+        return result;
+    }
+
+    /**
+     * 递归辅助方法，用于扁平化树状结构
+     *
+     * @param node   当前节点
+     * @param path   当前路径
+     * @param result 结果 Map
+     */
+    private static void flattenTreeHelper(BusinessDomainVO node, String path, Map<String, String> result) {
+        if (node == null) {
+            return;
+        }
+
+        // 构建当前节点的路径
+        String currentPath = path.isEmpty() ? node.getName() : path + "/" + node.getName();
+
+        // 将当前节点的 name 和路径存入 Map
+        result.put(node.getName(), currentPath);
+
+        // 递归处理子节点
+        for (BusinessDomainVO child : node.getChild()) {
+            flattenTreeHelper(child, currentPath, result);
+        }
+    }
+
+
 
     public static void createDriDatasource(String datasourceName, JsonObject jsonObject, String url,String user,int businessId,String driver,String descs){
         Connection connection = null;
