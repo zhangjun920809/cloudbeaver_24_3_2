@@ -16,6 +16,7 @@
  */
 package io.cloudbeaver.service.auth.impl;
 
+import com.google.gson.Gson;
 import io.cloudbeaver.DBWebException;
 import io.cloudbeaver.WebServiceUtils;
 import io.cloudbeaver.auth.SMSignOutLinkProvider;
@@ -35,7 +36,11 @@ import io.cloudbeaver.service.auth.WebAuthStatus;
 import io.cloudbeaver.service.auth.WebLogoutInfo;
 import io.cloudbeaver.service.auth.WebUserInfo;
 import io.cloudbeaver.service.auth.model.user.WebAuthProviderInfo;
+import io.cloudbeaver.service.security.CBEmbeddedSecurityController;
 import io.cloudbeaver.service.security.SMUtils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.DBException;
@@ -50,10 +55,7 @@ import org.jkiss.dbeaver.model.security.exception.SMTooManySessionsException;
 import org.jkiss.dbeaver.model.security.user.SMUser;
 import org.jkiss.utils.CommonUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Web service implementation
@@ -62,7 +64,7 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
 
     private static final Log log = Log.getLog(WebServiceAuthImpl.class);
     public static final String CONFIG_TEMP_ADMIN_USER_ID = "temp_config_admin";
-
+    private static final Gson gson = new Gson();
 //    @Override
     public WebAuthStatus authLogin_new(
         @NotNull WebSession webSession,
@@ -121,6 +123,7 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
 
     public WebAuthStatus authLogin(
             @NotNull WebSession webSession,
+            @NotNull HttpServletResponse response,
             @NotNull String providerId,
             @Nullable String providerConfigurationId,
             @Nullable Map<String, Object> authParameters,
@@ -140,14 +143,93 @@ public class WebServiceAuthImpl implements DBWServiceAuth {
         }
         //CBEmbeddedSecurityController类型，登录入口
         SMController securityController = webSession.getSecurityController();
+//        CBEmbeddedSecurityController securityController = (CBEmbeddedSecurityController)webSession.getSecurityController();
         String currentSmSessionId = (webSession.getUser() == null || CBApplication.getInstance().isConfigurationMode())
                 ? null
                 : webSession.getUserContext().getSmSessionId();
 
         try {
 //            var smAuthInfo = securityController.authenticateBak(//认证方法 原始认证方法
-            var smAuthInfo = securityController.authenticate(//认证方法，新增认证方法
+//            var smAuthInfo = securityController.authenticate(//认证方法，新增认证方法
+            var smAuthInfo = securityController.authenticateCookie(//认证方法，新增认证方法
                     webSession.getSessionId(),
+                    response,
+                    currentSmSessionId,//null
+                    webSession.getSessionParameters(),//登录地址和浏览器信息
+                    WebSession.CB_SESSION_TYPE, //CloudBeaver
+                    providerId,//local
+                    providerConfigurationId,//null
+                    authParameters,//用户名和密码
+                    forceSessionsLogout//false
+            );
+            //false
+            linkWithActiveUser = linkWithActiveUser && CBApplication.getInstance().getAppConfiguration().isLinkExternalCredentialsWithUser();
+            if (smAuthInfo.getAuthStatus() == SMAuthStatus.IN_PROGRESS) {
+                //run async auth process
+                return new WebAuthStatus(smAuthInfo.getAuthAttemptId(), smAuthInfo.getRedirectUrl(), smAuthInfo.getAuthStatus());
+            } else {// 执行
+                //run it sync
+                var authProcessor = new WebSessionAuthProcessor(webSession, smAuthInfo, linkWithActiveUser);
+                return new WebAuthStatus(smAuthInfo.getAuthStatus(), authProcessor.authenticateSession());
+            }
+        } catch (SMTooManySessionsException e) {
+            throw new DBWebException("User authentication failed", e.getErrorType(), e);
+        } catch (Exception e) {
+            throw new DBWebException("User authentication failed", e);
+        }
+
+    }
+    // 新增
+    public WebAuthStatus authLoginSSO(
+            @NotNull WebSession webSession,
+            @NotNull HttpServletRequest request,
+            @NotNull String providerId,
+            @Nullable String providerConfigurationId,
+            @Nullable Map<String, Object> authParameters,
+            boolean linkWithActiveUser,
+            boolean forceSessionsLogout
+    ) throws DBWebException {
+        if (CommonUtils.isEmpty(providerId)) {
+            throw new DBWebException("Missing auth provider parameter");
+        }
+
+        //dri验证格式： token = pid + hid
+        Cookie[] cookies = request.getCookies();
+        String driuser = null;
+        String user = null;
+        String token = null;
+        HashMap<String, Object> map = new HashMap<>();
+        for (Cookie cookie : cookies) {
+            String name = cookie.getName();
+            if ("DRI-USER".equalsIgnoreCase(name)){
+                driuser = cookie.getValue();
+                HashMap<String, String> hashMap = new HashMap<>();
+                hashMap = gson.fromJson(driuser, hashMap.getClass());
+                user = hashMap.get("authUser");
+                token = hashMap.get("pID");
+            }
+        }
+        log.info("pid======:"+ token);
+        WebAuthProviderDescriptor authProviderDescriptor = WebAuthProviderRegistry.getInstance()
+                .getAuthProvider(providerId);
+        if (authProviderDescriptor.isTrusted()) {
+            throw new DBWebException(authProviderDescriptor.getLabel() + " not allowed for authorization via GQL API");
+        }
+        if (authParameters == null) {
+            authParameters = Map.of();
+        }
+        //CBEmbeddedSecurityController类型，登录入口
+        SMController securityController = webSession.getSecurityController();
+        String currentSmSessionId = (webSession.getUser() == null || CBApplication.getInstance().isConfigurationMode())
+                ? null
+                : webSession.getUserContext().getSmSessionId();
+
+        try {
+//            var smAuthInfo = securityController.authenticateBak(//认证方法 原始认证方法
+            var smAuthInfo = securityController.authenticateSSO(//认证方法，新增认证方法
+                    webSession.getSessionId(),
+                    user,
+//                    token,
                     currentSmSessionId,//null
                     webSession.getSessionParameters(),//登录地址和浏览器信息
                     WebSession.CB_SESSION_TYPE, //CloudBeaver

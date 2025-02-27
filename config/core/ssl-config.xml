@@ -9,13 +9,13 @@
         <Arg>
             <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
                 <Set name="keyStorePath">
-                    ../security/hongyi.jks
+                    security/hongyi.jks
                 </Set>
                 <Set name="keyStorePassword">
                     hongyi2020
                 </Set>
                 <Set name="trustStorePath">
-                    ../security/client-truststore.jks
+                    security/client-truststore.jks
                 </Set>
                 <Set name="trustStorePassword">
                     hongyi2020

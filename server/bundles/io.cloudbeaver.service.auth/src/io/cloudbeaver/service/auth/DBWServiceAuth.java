@@ -22,6 +22,8 @@ import io.cloudbeaver.model.WebPropertyInfo;
 import io.cloudbeaver.model.session.WebSession;
 import io.cloudbeaver.service.DBWService;
 import io.cloudbeaver.service.auth.model.user.WebAuthProviderInfo;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
 
@@ -35,11 +37,32 @@ public interface DBWServiceAuth extends DBWService {
     @WebAction(authRequired = false)
     WebAuthStatus authLogin(
         @NotNull WebSession webSession,
+        @NotNull HttpServletResponse response,
         @NotNull String providerId,
         @Nullable String providerConfigurationId,
         @Nullable Map<String, Object> credentials,
         boolean linkWithActiveUser,
         boolean forceSessionsLogout) throws DBWebException;
+
+//    @WebAction(authRequired = false)
+//    default WebAuthStatus authLoginNew(
+//            @NotNull WebSession webSession,
+//            @NotNull HttpServletResponse response,
+//            @NotNull String providerId,
+//            @Nullable String providerConfigurationId,
+//            @Nullable Map<String, Object> credentials,
+//            boolean linkWithActiveUser,
+//            boolean forceSessionsLogout) throws DBWebException{return null;};
+
+    @WebAction(authRequired = false)
+    WebAuthStatus authLoginSSO(
+            @NotNull WebSession webSession,
+            @NotNull HttpServletRequest request,
+            @NotNull String providerId,
+            @Nullable String providerConfigurationId,
+            @Nullable Map<String, Object> credentials,
+            boolean linkWithActiveUser,
+            boolean forceSessionsLogout) throws DBWebException;
 
 
     @WebAction(authRequired = false)

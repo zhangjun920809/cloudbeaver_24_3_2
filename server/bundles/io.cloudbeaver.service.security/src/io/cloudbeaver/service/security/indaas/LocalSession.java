@@ -31,6 +31,7 @@ public class LocalSession {
     private ZonedDateTime expiryTime;
     private UUID refreshId;
     private ZonedDateTime refreshExpiryTime;
+    private PermissionDTO permission;
 
     public LocalSession(int userHash, String username, ZonedDateTime expiryTime, ZonedDateTime refreshExpiryTime) {
         this.userHash = userHash;
@@ -50,6 +51,14 @@ public class LocalSession {
         this.refreshId = UUID.fromString(refreshId);
         this.refreshExpiryTime = refreshExpiryTime;
 
+    }
+
+    public PermissionDTO getPermission() {
+        return permission;
+    }
+
+    public void setPermission(PermissionDTO permission) {
+        this.permission = permission;
     }
 
     public UUID getSessionId() {

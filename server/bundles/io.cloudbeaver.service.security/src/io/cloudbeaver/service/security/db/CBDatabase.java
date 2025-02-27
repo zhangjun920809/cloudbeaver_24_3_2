@@ -465,6 +465,41 @@ public class CBDatabase {
         return adminUser;
     }
 
+    public SMUser createAdminUserForDriSSO(
+            @NotNull String adminName,
+            @Nullable String adminPassword
+    ) throws DBException {
+        SMUser adminUser = adminSecurityController.getUserById(adminName);
+
+//        if (adminUser == null) {
+        adminUser = new SMUser(adminName, true, "ADMINISTRATOR");
+        adminSecurityController.createUser(adminUser.getUserId(),
+                adminUser.getMetaParameters(),
+                true,
+                adminUser.getAuthRole());
+//        }
+
+        if (!CommonUtils.isEmpty(adminPassword)) {
+//             This is how client password will be transmitted from client
+            //取消此处的md5加密，因为传入的参数已经MD5加密过一次
+//            String clientPassword = SecurityUtils.makeDigest(adminPassword);
+
+            Map<String, Object> credentials = new LinkedHashMap<>();
+            credentials.put(LocalAuthProviderConstants.CRED_USER, adminUser.getUserId());
+            credentials.put(LocalAuthProviderConstants.CRED_PASSWORD, adminPassword);
+
+            WebAuthProviderDescriptor authProvider = WebAuthProviderRegistry.getInstance()
+                    .getAuthProvider(LocalAuthProviderConstants.PROVIDER_ID);
+            if (authProvider != null) {
+                adminSecurityController.setUserCredentialsSSO(adminUser.getUserId(), authProvider.getId(), credentials);
+            }
+        }
+
+        grantAdminPermissionsToUser(adminUser.getUserId());
+
+        return adminUser;
+    }
+
     private void grantAdminPermissionsToUser(String userId) throws DBException {
         // Grant all teams
         SMTeam[] allTeams = adminSecurityController.readAllTeams();

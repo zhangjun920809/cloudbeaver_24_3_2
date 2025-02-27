@@ -29,6 +29,7 @@ import io.cloudbeaver.server.websockets.CBEventsWebSocket;
 import io.cloudbeaver.server.websockets.CBWebSocketServerConfigurator;
 import io.cloudbeaver.service.DBWServiceBindingServlet;
 import io.cloudbeaver.service.DBWServiceBindingWebSocket;
+import jakarta.servlet.DispatcherType;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -48,6 +49,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 public class CBJettyServer {
 
@@ -120,6 +122,9 @@ public class CBJettyServer {
 
                 servletContextHandler.addServlet(new ServletHolder("graphql", new GraphQLEndpoint()), serverConfiguration.getServicesURI() + "gql/*");
                 servletContextHandler.addEventListener(new CBServerContextListener(application));
+                //新增
+                EnumSet<DispatcherType> dispatches = EnumSet.of(DispatcherType.REQUEST);
+                servletContextHandler.addFilter(new IndaasInterseptor(application),"/api/gql",dispatches);
 
                 // Add extensions from services
 

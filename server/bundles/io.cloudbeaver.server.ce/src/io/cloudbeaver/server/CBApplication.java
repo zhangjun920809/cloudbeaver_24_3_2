@@ -214,11 +214,12 @@ public abstract class CBApplication<T extends CBServerConfig> extends
             return;
         }
 
+
         refreshDisabledDriversConfig();
 
-        configurationMode = CommonUtils.isEmpty(getServerConfiguration().getServerName());
+//        configurationMode = CommonUtils.isEmpty(getServerConfiguration().getServerName());
         // 取消初始化逻辑，直接赋值false即可
-//        configurationMode = false;
+        configurationMode = false;
 
         eventController.setForceSkipEvents(isConfigurationMode()); // do not send events if configuration mode is on
 

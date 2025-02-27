@@ -38,11 +38,32 @@ public class WebServiceBindingAuth extends WebServiceBindingBase<DBWServiceAuth>
         model.getQueryType()
             .dataFetcher("authLogin", env -> getService(env).authLogin(
                 getWebSession(env, false),
+                getServletResponse(env),
                 env.getArgument("provider"),
                 env.getArgument("configuration"),
                 env.getArgument("credentials"),
                 CommonUtils.toBoolean(env.getArgument("linkUser")),
                 CommonUtils.toBoolean(env.getArgument("forceSessionsLogout"))
+            ))
+//                //新增
+//                .dataFetcher("authLogin", env -> getService(env).authLoginNew(
+//                        getWebSession(env, false),
+//                        getServletResponse(env),
+//                        env.getArgument("provider"),
+//                        env.getArgument("configuration"),
+//                        env.getArgument("credentials"),
+//                        CommonUtils.toBoolean(env.getArgument("linkUser")),
+//                        CommonUtils.toBoolean(env.getArgument("forceSessionsLogout"))
+//                ))
+                //新增，用于和dri统一登录功能
+            .dataFetcher("authLoginsso", env -> getService(env).authLoginSSO(
+                    getWebSession(env, false),
+                    getServletRequest(env),
+                    env.getArgument("provider"),
+                    env.getArgument("configuration"),
+                    env.getArgument("credentials"),
+                    CommonUtils.toBoolean(env.getArgument("linkUser")),
+                    CommonUtils.toBoolean(env.getArgument("forceSessionsLogout"))
             ))
             .dataFetcher("authLogoutExtended", env -> getService(env).authLogout(
                 getWebSession(env, false),
