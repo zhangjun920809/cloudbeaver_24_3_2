@@ -191,6 +191,9 @@ public class CBStaticServlet extends DefaultServlet {
         return false;
     }
 
+    public static void main(String[] args) {
+
+    }
     private void patchStaticContentIfNeeded(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String pathInContext = request.getServletPath();
 
@@ -207,6 +210,24 @@ public class CBStaticServlet extends DefaultServlet {
         ) {
             super.doGet(request, response);
             return;
+        }
+
+        // 如果是 visualmodel.html 页面，则跳转到登录页
+        if (pathInContext.endsWith("visualmodel.html")){
+            try{
+                WebSession webSession = CBApplication.getInstance().getSessionManager().getWebSession(
+                        request, response, false);
+                String userId = webSession.getUserId();
+                if (userId == null){
+                    response.setHeader("content-type", "application/json");
+                    response.setStatus(401);
+                    response.sendRedirect("/#/login");
+                    return;
+                }
+            }catch (DBWebException e) {
+                log.error("Error reading websession", e);
+            }
+
         }
 
         if (pathInContext.startsWith("/")) {
