@@ -67,12 +67,13 @@ public class IndaasInterseptor implements Filter {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        // 跳过对指定请求的验证
         if (isSkip){
             chain.doFilter(wrappedRequest, response);
         } else {
 
             String driUserCookie = null;
+            String mdcPid = null;
             String cookieHeader = httpServletRequest.getHeader("Cookie");
             if (cookieHeader != null) {
                 cookieHeader = cookieHeader.trim();
@@ -86,25 +87,36 @@ public class IndaasInterseptor implements Filter {
                         driUserCookie = split[1];
                     }
                 }
-
+                // 获取mdc独立登录时的pid
+                String tmpmdcPid = Arrays.stream(cookies)
+                        .filter(name -> name.contains("pID"))
+                        .findFirst().orElse("");
+                if (tmpmdcPid != null){
+                    String[] split = tmpmdcPid.split("=");
+                    if (split.length == 2){
+                        mdcPid = split[1];
+                    }
+                }
             }
             String pid = null;
+            //mdc单独登录时，获取不到pid,所以pid为null时，需要再验证mdc单独设置的逻辑
             if (driUserCookie != null ){
                 driUserCookie = URLDecoder.decode(driUserCookie);
                 HashMap<String, String> hashMap = gson.fromJson(driUserCookie, new HashMap<String, String>().getClass());
                 if (hashMap != null){
                     pid =  hashMap.get("pID");
                 }
+            } else {
+                pid = mdcPid;
             }
 //            log.info("driUserCookie:"+driUserCookie);
             // 获取携带的Cookie (dir项目返回的cookie格式不一致)
-            HashMap<String, Object> map = new HashMap<>();
             try {
                 if ( pid == null){
                     throw new Exception("验证失败，请重新登录！");
                 }
                 String modelcenter = LoginPorcess.authenticateDB(null, pid, "modelcenter");
-//                log.info("modelcenter验证结果："+modelcenter);
+                log.debug("modelcenter验证结果："+modelcenter);
                 //  验证cb原有逻辑
                 Map<String, Object> authParameters = new HashMap<>();
                 WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession((HttpServletRequest) request, (HttpServletResponse) response);
