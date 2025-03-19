@@ -4,7 +4,51 @@
 ####################################################
 
 # Property
+type ERDDiagramData {
+    icons: [String!]!
+}
 
+type ERDEntityInfo {
+    id: Int!
+    name: String!
+    alias: String
+    fqn: String
+    nodeId: ID
+    nodeUri: ID
+    attributes: [ ERDEntityAttributeInfo! ]!
+}
+
+type ERDEntityAttributeInfo {
+    name: String!
+    alias: String
+    dataKind: String
+    typeName: String
+    optional: Boolean
+    iconIndex: Int
+    fullTypeName: String
+    defaultValue: String
+    description: String
+    checked: Boolean!
+    expression: String
+    inPrimaryKey: Boolean
+    inForeignKey: Boolean
+}
+
+type ERDAssociationInfo {
+    name: String!
+    fqn: String
+    type: String!
+    primaryEntity: Int
+    foreignEntity: Int
+    primaryAttributes: [String!]!
+    foreignAttributes: [String!]!
+}
+
+type ERDDiagramInfo {
+    entities: [ ERDEntityInfo!]!
+    associations: [ ERDAssociationInfo!]
+    data: ERDDiagramData!
+}
 type ObjectPropertyInfo {
     # ID
     id: String
@@ -601,6 +645,10 @@ extend type Query {
     readSessionLog(maxEntries: Int, clearEntries: Boolean): [ LogEntry! ]!
 #    获取业务域列表
     getBusinessInfo: BusinessInfo
+
+    generateEntityDiagram(objectNodeIds: [ID!]!): Object
+
+    generateEntityDiagramExtended(objectNodeIds: [ID!]!): ERDDiagramInfo!
 }
 
 extend type Mutation {
@@ -667,5 +715,20 @@ extend type Mutation {
     asyncTaskCancel(id: String!): Boolean
 
     asyncTaskInfo(id: String!, removeOnFinish: Boolean!): AsyncTaskInfo!
+
+    fakeFunction: Object # it's needed because of types generation bug
 }
+
+
+#extend type Query {
+#
+#    generateEntityDiagram(objectNodeIds: [ID!]!): Object @deprecated
+#
+#    generateEntityDiagramExtended(objectNodeIds: [ID!]!): ERDDiagramInfo! @since(version: "24.1.1")
+#
+#}
+#
+#extend type Mutation {
+#    fakeFunction: Object # it's needed because of types generation bug
+#}
 

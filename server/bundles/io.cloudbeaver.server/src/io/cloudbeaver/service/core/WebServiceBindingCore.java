@@ -53,6 +53,8 @@ public class WebServiceBindingCore extends WebServiceBindingBase<DBWServiceCore>
         WebAppSessionManager sessionManager = WebAppUtils.getWebApplication().getSessionManager();
         model.getQueryType()
             .dataFetcher("serverConfig", env -> getService(env).getServerConfig())
+            .dataFetcher("generateEntityDiagram", env -> getService(env).generateEntityDiagram(getWebSession(env),env.getArgument("objectNodeIds")))
+            .dataFetcher("generateEntityDiagramExtended", env -> getService(env).generateEntityDiagramExtended(getWebSession(env),env.getArgument("objectNodeIds")))
             .dataFetcher("productSettings", env -> getService(env).getProductSettings(getWebSession(env)))
 
             .dataFetcher("driverList", env -> getService(env).getDriverList(getWebSession(env),env.getArgument("id")))

@@ -10,6 +10,11 @@
     <extension point="org.jkiss.dbeaver.service">
         <service name="org.jkiss.dbeaver.runtime.DBServiceConnections" class="io.cloudbeaver.server.WebServiceConnectionsImpl"/>
     </extension>
+    <extension point="io.cloudbeaver.service1">
+
+        <service id="erd" label="ERD" description="ER diagrams" class="io.cloudbeaver.indaas.erd.model.WebServiceBindingERD"/>
+
+    </extension>
 
     <extension point="io.cloudbeaver.service">
         <service id="core" label="Core service" description="Core services" class="io.cloudbeaver.service.core.WebServiceBindingCore">

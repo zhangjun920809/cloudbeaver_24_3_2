@@ -1,0 +1,57 @@
+## ERD queries
+#type ERDDiagramData {
+#    icons: [String!]!
+#}
+#type ERDEntityAttributeInfo {
+#    name: String!
+#    alias: String
+#    dataKind: String
+#    typeName: String
+#    optional: Boolean
+#    iconIndex: Int
+#    fullTypeName: String
+#    defaultValue: String
+#    description: String
+#    checked: Boolean!
+#    expression: String
+#    inPrimaryKey: Boolean
+#    inForeignKey: Boolean
+#}
+#
+#type ERDEntityInfo {
+#    id: Int!
+#    name: String!
+#    alias: String
+#    fqn: String
+#    nodeId: ID
+#    nodeUri: ID
+#    attributes: [ ERDEntityAttributeInfo! ]!
+#}
+#
+#type ERDAssociationInfo {
+#    name: String!
+#    fqn: String
+#    type: String!
+#    primaryEntity: Int
+#    foreignEntity: Int
+#    primaryAttributes: [String!]!
+#    foreignAttributes: [String!]!
+#}
+#
+#type ERDDiagramInfo {
+#    entities: [ ERDEntityInfo!]!
+#    associations: [ ERDAssociationInfo!]
+#    data: ERDDiagramData!
+#}
+#
+#extend type Query {
+#
+#    generateEntityDiagram(objectNodeIds: [ID!]!): Object
+#
+#    generateEntityDiagramExtended(objectNodeIds: [ID!]!): ERDDiagramInfo!
+#
+#}
+#
+#extend type Mutation {
+#    fakeFunction: Object # it's needed because of types generation bug
+#}

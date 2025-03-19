@@ -20,6 +20,8 @@ package io.cloudbeaver.service.core.impl;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.cloudbeaver.*;
+import io.cloudbeaver.indaas.erd.model.WebERDDiagramInfo;
+import io.cloudbeaver.indaas.erd.model.WebERDUtils;
 import io.cloudbeaver.model.*;
 import io.cloudbeaver.model.app.ServletApplication;
 import io.cloudbeaver.model.session.WebSession;
@@ -40,6 +42,10 @@ import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.Log;
+import org.jkiss.dbeaver.erd.model.ERDContentProviderDefault;
+import org.jkiss.dbeaver.erd.model.ERDContext;
+import org.jkiss.dbeaver.erd.model.ERDDiagram;
+import org.jkiss.dbeaver.erd.model.ERDUtils;
 import org.jkiss.dbeaver.model.DBConstants;
 import org.jkiss.dbeaver.model.DBPDataSourceContainer;
 import org.jkiss.dbeaver.model.DBPDataSourceFolder;
@@ -57,6 +63,8 @@ import org.jkiss.dbeaver.model.rm.RMProjectType;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.model.secret.DBSSecretController;
 import org.jkiss.dbeaver.model.secret.DBSSecretValue;
+import org.jkiss.dbeaver.model.struct.DBSObject;
+import org.jkiss.dbeaver.model.struct.DBSObjectContainer;
 import org.jkiss.dbeaver.model.websocket.WSConstants;
 import org.jkiss.dbeaver.model.websocket.event.datasource.WSDataSourceConnectEvent;
 import org.jkiss.dbeaver.model.websocket.event.datasource.WSDataSourceProperty;
@@ -83,7 +91,64 @@ public class WebServiceCore implements DBWServiceCore {
     public WebServerConfig getServerConfig() {
         return WebAppUtils.getWebApplication().getWebServerConfig();
     }
+    public Map<String, Object> generateEntityDiagram(WebSession webSession, List<String> nodeIds) throws DBWebException {
+        try {
+            ERDDiagram diagram = generateDiagram(webSession, nodeIds);
+            return WebERDUtils.serializeDiagram(webSession, diagram, true);
+        } catch (DBException var4) {
+            throw new DBWebException("Couldn't generate ER diagram content", var4);
+        }
+    }
 
+    public WebERDDiagramInfo generateEntityDiagramExtended(@NotNull WebSession webSession, @NotNull List<String> nodeIds) throws DBWebException {
+        try {
+            ERDDiagram diagram = generateDiagram(webSession, nodeIds);
+            ERDContext erdContext = WebERDUtils.buildContext(webSession, diagram);
+            if (erdContext == null) {
+                throw new DBWebException("Error building ERD context");
+            } else {
+                return new WebERDDiagramInfo(diagram, erdContext, true);
+            }
+        } catch (DBException var5) {
+            throw new DBWebException("Couldn't generate ER diagram content", var5);
+        }
+    }
+    private static ERDDiagram generateDiagram(@NotNull WebSession webSession, @NotNull List<String> nodeIds) throws DBException {
+        List<DBSObject> rootObjects = new ArrayList();
+        DBRProgressMonitor monitor = webSession.getProgressMonitor();
+        DBNModel navigatorModel = webSession.getNavigatorModelOrThrow();
+        Iterator var6 = nodeIds.iterator();
+
+        while(var6.hasNext()) {
+            String nodeId = (String)var6.next();
+            DBNNode node = navigatorModel.getNodeByPath(monitor, nodeId);
+            if (node instanceof DBNDatabaseNode databaseNode) {
+                rootObjects.add(databaseNode.getObject());
+            }
+        }
+
+        ERDDiagram diagram = new ERDDiagram((DBSObject)null, "Web ERD", new ERDContentProviderDefault());
+
+        Object root;
+        for(Iterator var11 = rootObjects.iterator(); var11.hasNext(); diagram.fillEntities(monitor, ERDUtils.collectDatabaseTables(monitor, (DBSObject)root, diagram, true, false), (DBSObject)root)) {
+            root = (DBSObject)var11.next();
+            if (root instanceof DBPDataSourceContainer dataSourceContainer) {
+                if (!dataSourceContainer.isConnected()) {
+                    dataSourceContainer.connect(monitor, true, true);
+                }
+
+                root = ((DBSObject)root).getDataSource();
+            }
+        }
+
+        Object var13;
+        if (rootObjects.size() == 1 && (var13 = rootObjects.get(0)) instanceof DBSObjectContainer) {
+            DBSObjectContainer objectContainer = (DBSObjectContainer)var13;
+            diagram.setRootObjectContainer(objectContainer);
+        }
+
+        return diagram;
+    }
     @Override
     public List<WebDatabaseDriverInfo> getDriverList(@NotNull WebSession webSession, String driverId) {
         List<WebDatabaseDriverInfo> result = new ArrayList<>();
