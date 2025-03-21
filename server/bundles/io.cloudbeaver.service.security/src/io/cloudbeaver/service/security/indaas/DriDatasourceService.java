@@ -3,6 +3,7 @@ package io.cloudbeaver.service.security.indaas;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import io.cloudbeaver.model.BusinessDomainDto;
 import io.cloudbeaver.model.BusinessDomainVO;
 import io.cloudbeaver.service.security.EmbeddedSecurityControllerFactory;
@@ -30,6 +31,63 @@ public class DriDatasourceService {
     public static void main(String[] args) {
 
     }
+
+    public static List<DatabaseDto>  queryAllDatabase(){
+        PreparedStatement preparedStatement = null;
+        Connection connection = null;
+        List<DatabaseDto> databaselist = new ArrayList<>();
+        try {
+
+            CBDatabase dataSource = EmbeddedSecurityControllerFactory.getDbDbInstance();
+            connection = dataSource.openConnection();
+            String sql =" select id,name,db_uuid,description,details,create_user,data_level, engine,d.bd_name,status,update_time,d.bd_id  from indaas_database c left join (\n" +
+                    "select a.resource_id,b.bd_name,b.bd_id  from indaas_business_resource a join indaas_business_domain b on a.bd_id = b.bd_id " +
+                    "where a.resource_type='datasource') d on c.id= d.resource_id where c.name <> ? order by update_time desc";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1,"METRICS_DB");
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // 保存列
+            while(resultSet.next()){
+                DatabaseDto databaseDto = new DatabaseDto();
+                int id = resultSet.getInt("id");
+                int bdId = resultSet.getInt("bd_id");
+                int dataLevel = resultSet.getInt("data_level");
+                String name = resultSet.getString("name");
+                String dbUuid = resultSet.getString("db_uuid");
+                String description = resultSet.getString("description");
+                String details = resultSet.getString("details");
+                String create_user = resultSet.getString("create_user");
+                String engine = resultSet.getString("engine");
+                String business_source = resultSet.getString("bd_name");
+                String update_time = resultSet.getString("update_time");
+                databaseDto.setId(id);
+                databaseDto.setBusinessId(bdId);
+                databaseDto.setLevelId(dataLevel);
+                databaseDto.setName(name);
+                databaseDto.setUuid(dbUuid);
+                databaseDto.setDesc(description);
+//                databaseDto.setConfiguration(details);
+                databaseDto.setType(engine);
+                databaseDto.setCreateBy(create_user);
+                databaseDto.setBusinessSource(business_source);
+                databaseDto.setUpdateTime(update_time);
+                Map<String, Object> map = gson.fromJson(details, new TypeToken<Map<String, Object>>() {
+                }.getType());
+                databaseDto.setHost(map.get("host").toString());
+                databaseDto.setPort(map.get("port").toString());
+                databaseDto.setDbname(map.get("dataBase").toString());
+                databaselist.add(databaseDto);
+            }
+            return databaselist;
+        } catch (Exception e) {
+            log.error("获取数据源信息失败！",e);
+            return databaselist;
+        } finally {
+            LoginPorcess.closePreparedStatement(preparedStatement);
+            LoginPorcess.closeConnection(connection);
+        }
+    }
     /**
      * 扁平化树状结构
      *
@@ -39,7 +97,7 @@ public class DriDatasourceService {
         List<BusinessDomainDto> resources = getAllBusiness();
         List<BusinessDomainVO> resourcevo= getBusinessDomainTree(-1,resources);
         BusinessDomainVO root = resourcevo.get(0);
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> result = new LinkedHashMap<>();
         flattenTreeHelper(root, "", result);
         return result;
     }

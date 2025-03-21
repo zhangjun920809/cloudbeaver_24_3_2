@@ -27,6 +27,7 @@ import io.cloudbeaver.model.session.WebSession;
 import io.cloudbeaver.server.CBConstants;
 import io.cloudbeaver.server.WebAppUtils;
 import io.cloudbeaver.service.security.LicenseService;
+import io.cloudbeaver.service.security.indaas.DatabaseDto;
 import io.cloudbeaver.service.security.indaas.DriDatasourceService;
 import io.cloudbeaver.utils.WebConnectionFolderUtils;
 import io.cloudbeaver.utils.WebEventUtils;
@@ -44,12 +45,15 @@ import org.jkiss.dbeaver.model.DBPDataSourceFolder;
 import org.jkiss.dbeaver.model.app.DBPDataSourceRegistry;
 import org.jkiss.dbeaver.model.data.json.JSONUtils;
 import org.jkiss.dbeaver.model.navigator.DBNLocalFolder;
+import org.jkiss.dbeaver.model.rm.RMController;
 import org.jkiss.dbeaver.model.websocket.WSConstants;
+import org.jkiss.dbeaver.model.websocket.event.resource.WSResourceProperty;
 import org.jkiss.dbeaver.utils.GeneralUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @WebServlet(urlPatterns = "/indaas/*")
@@ -89,6 +93,7 @@ public class WebLicenseServlet extends DefaultServlet {
                 if(requestURI.endsWith("syncbusiness")){
                     WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession(request,response);
                     String userId = webSession.getUserId();
+                    RMController rmController = webSession.getRmController();
                     if (userId != null){
                         Map<String, String> stringStringMap = DriDatasourceService.flattenTree();
                         stringStringMap.remove("全部业务域");
@@ -108,7 +113,57 @@ public class WebLicenseServlet extends DefaultServlet {
                         response.sendError(401, "未通过认证！");
                     }
 
-                } else if(requestURI.endsWith("upload")){
+                } else if(requestURI.endsWith("getdatasource")){
+                    WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession(request,response);
+                    String userId = webSession.getUserId();
+                    if (userId != null){
+                        List<DatabaseDto> stringStringMap = DriDatasourceService.queryAllDatabase();
+
+                        HashMap<String, Object> map = new HashMap<>();
+                        map.put("message", "请求完成！");
+                        map.put("code", 200);
+                        map.put("data", stringStringMap);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter().write(gson.toJson(map));
+                    } else {
+                        response.sendError(401, "未通过认证！");
+                    }
+
+                } else if (requestURI.endsWith("syncresource")){
+                    WebSession webSession = WebAppUtils.getWebApplication().getSessionManager().getWebSession(request,response);
+                    String userId = webSession.getUserId();
+                    RMController rmController = webSession.getRmController();
+                    if (userId != null){
+                        Map<String, String> stringStringMap = DriDatasourceService.flattenTree();
+                        stringStringMap.remove("全部业务域");
+                        stringStringMap = resourceReplaceValue(stringStringMap,"全部业务域/","");
+                        stringStringMap.forEach((key, value) ->{
+                            try {
+                                rmController.createResource("g_GlobalConfiguration",value,true);
+                                WebEventUtils.addRmResourceUpdatedEvent(
+                                        "g_GlobalConfiguration",
+                                        webSession,
+                                        value,
+                                        WSConstants.EventAction.CREATE,
+                                        WSResourceProperty.NAME);
+                            } catch (Exception e) {
+                                System.out.println(e.getMessage());
+                            }
+//                                    System.out.println(key + ": " + value);
+                        });
+
+                        HashMap<String, Object> map = new HashMap<>();
+                        map.put("message", "业务域目录同步完成！");
+                        map.put("code", 200);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter().write(gson.toJson(map));
+                    } else {
+                        response.sendError(401, "未通过认证！");
+                    }
+                }else if(requestURI.endsWith("upload")){
+
                     LicenseService licenseService = new LicenseService();
                     licenseService.installLicense(request,response);
                 } else {
@@ -182,6 +237,21 @@ public class WebLicenseServlet extends DefaultServlet {
                 // 替换目标字符串
                 String newValue = value.replace(target, replacement);
                 newValue = newValue.replace("/"+key,"");
+
+                entry.setValue(newValue);
+            }
+        }
+        return map;
+    }
+
+    private static Map<String, String> resourceReplaceValue(Map<String, String> map, String target, String replacement) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String value = entry.getValue();
+            String key = entry.getKey();
+            if (value != null) {
+                // 替换目标字符串
+                String newValue = value.replace(target, replacement);
+//                newValue = newValue.replace("/"+key,"");
 
                 entry.setValue(newValue);
             }
